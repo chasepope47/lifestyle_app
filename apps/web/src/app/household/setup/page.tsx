@@ -43,9 +43,18 @@ export default function HouseholdSetupPage() {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    const { error } = await supabase.rpc('join_household', { p_invite_code: inviteCode.toUpperCase() })
-    if (error) { setError(error.message); setLoading(false); return }
-    router.push('/dashboard')
+    try {
+      const { data, error } = await supabase.rpc('join_household', { p_invite_code: inviteCode.toUpperCase() })
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+        return
+      }
+      router.push('/dashboard')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+      setLoading(false)
+    }
   }
 
   if (mode === 'choose') {
