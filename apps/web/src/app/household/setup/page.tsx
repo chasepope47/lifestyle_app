@@ -50,7 +50,8 @@ export default function HouseholdSetupPage() {
         setLoading(false)
         return
       }
-      router.push('/dashboard')
+      await router.push('/dashboard')
+      setLoading(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
       setLoading(false)

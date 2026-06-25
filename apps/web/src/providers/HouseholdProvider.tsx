@@ -33,34 +33,41 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
-    if (!user) {
+    try {
+      if (!user) {
+        setHousehold(null)
+        setMembers([])
+        setLoading(false)
+        return
+      }
+
+      const { data: member, error: memberError } = await supabase
+        .from('household_members')
+        .select('household_id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (memberError || !member) {
+        setHousehold(null)
+        setMembers([])
+        setLoading(false)
+        return
+      }
+
+      const [{ data: hh }, { data: mems }] = await Promise.all([
+        supabase.from('households').select('*').eq('id', member.household_id).single(),
+        supabase.from('household_members').select('*').eq('household_id', member.household_id),
+      ])
+
+      setHousehold(hh ?? null)
+      setMembers(mems ?? [])
+      setLoading(false)
+    } catch (error) {
+      console.error('Error loading household:', error)
       setHousehold(null)
       setMembers([])
       setLoading(false)
-      return
     }
-
-    const { data: member } = await supabase
-      .from('household_members')
-      .select('household_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!member) {
-      setHousehold(null)
-      setMembers([])
-      setLoading(false)
-      return
-    }
-
-    const [{ data: hh }, { data: mems }] = await Promise.all([
-      supabase.from('households').select('*').eq('id', member.household_id).single(),
-      supabase.from('household_members').select('*').eq('household_id', member.household_id),
-    ])
-
-    setHousehold(hh ?? null)
-    setMembers(mems ?? [])
-    setLoading(false)
   }
 
   useEffect(() => { load() }, [user])

@@ -43,9 +43,11 @@ CREATE POLICY "owner_delete_household"
 
 CREATE POLICY "members_read_membership"
   ON household_members FOR SELECT
-  USING (household_id IN (
-    SELECT household_id FROM household_members WHERE user_id = auth.uid()
-  ));
+  USING (true);
+
+CREATE POLICY "members_insert_membership"
+  ON household_members FOR INSERT
+  WITH CHECK (user_id = auth.uid());
 
 CREATE POLICY "member_update_own_profile"
   ON household_members FOR UPDATE
