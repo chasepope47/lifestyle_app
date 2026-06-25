@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Plus, Play, Square, Clock } from 'lucide-react'
+import { Plus, Play, Square, Clock, ExternalLink } from 'lucide-react'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
@@ -85,6 +85,35 @@ export default function WorkoutsPage() {
             <Square className="w-4 h-4" /> End workout
           </button>
         )}
+      </div>
+
+      {/* Import from Health Apps */}
+      <div className="rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-5 mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <ExternalLink className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <h2 className="font-semibold text-blue-900 dark:text-blue-100">Sync from your health apps</h2>
+        </div>
+        <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">Connect your wearable devices and health data:</p>
+        <div className="flex gap-3 flex-wrap">
+          <a
+            href="https://connect.garmin.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-blue-900 border border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-300 text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-800 transition-colors"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Garmin Connect
+          </a>
+          <a
+            href="https://www.apple.com/health/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-blue-900 border border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-300 text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-800 transition-colors"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Apple Health
+          </a>
+        </div>
       </div>
 
       {activeSession && (
