@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { ExternalLink, Trash2, RefreshCw, Plus } from 'lucide-react'
+import { ExternalLink, Trash2, Plus, Smartphone, Watch } from 'lucide-react'
 import { useAuth } from '@/providers/AuthProvider'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { createClient } from '@/lib/supabase/client'
@@ -8,27 +8,6 @@ import type { Database } from '@lifestyle/db'
 
 type IntegrationToken = Database['public']['Tables']['integration_tokens']['Row']
 type AppShortcut = Database['public']['Tables']['app_shortcuts']['Row']
-
-const INTEGRATIONS = [
-  {
-    id: 'garmin' as const,
-    name: 'Garmin Connect',
-    description: 'Sync workouts, steps, heart rate, and sleep from your Garmin device.',
-    docsUrl: 'https://developer.garmin.com/gc-developer-program/overview/',
-  },
-  {
-    id: 'bevel' as const,
-    name: 'Bevel Health',
-    description: 'Aggregate health data from multiple wearables into one sync.',
-    docsUrl: '#',
-  },
-  {
-    id: 'canvas' as const,
-    name: 'Canvas LMS',
-    description: 'Sync courses and assignments from your Canvas account.',
-    docsUrl: 'https://canvas.instructure.com/doc/api/',
-  },
-]
 
 export default function IntegrationsPage() {
   const { user } = useAuth()
@@ -68,29 +47,10 @@ export default function IntegrationsPage() {
     setCanvasForm({ instanceUrl: '', token: '' })
   }
 
-  const disconnectProvider = async (provider: IntegrationToken['provider']) => {
+  const disconnectCanvas = async () => {
     if (!user) return
-    await supabase.from('integration_tokens').delete().eq('user_id', user.id).eq('provider', provider)
-    setTokens(prev => prev.filter(t => t.provider !== provider))
-  }
-
-  const connectGarmin = () => {
-    const clientId = process.env.NEXT_PUBLIC_GARMIN_CLIENT_ID
-    if (!clientId) { alert('Garmin OAuth not configured. Set GARMIN_CLIENT_ID in .env.'); return }
-    const state = Math.random().toString(36).slice(2)
-    const redirectUri = `${window.location.origin}/api/auth/garmin/callback`
-    const url = `https://connect.garmin.com/oauth2Confirm?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${state}&scope=ACTIVITY_EXPORT DAILY_SUMMARY SLEEP`
-    window.location.href = url
-  }
-
-  const connectBevel = () => {
-    const clientId = process.env.NEXT_PUBLIC_BEVEL_CLIENT_ID
-    const baseUrl = process.env.NEXT_PUBLIC_BEVEL_API_BASE_URL
-    if (!clientId || !baseUrl) { alert('Bevel OAuth not configured. Set BEVEL_CLIENT_ID in .env.'); return }
-    const state = Math.random().toString(36).slice(2)
-    const redirectUri = `${window.location.origin}/api/auth/bevel/callback`
-    const url = `${baseUrl}/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=${state}&scope=workouts metrics:read`
-    window.location.href = url
+    await supabase.from('integration_tokens').delete().eq('user_id', user.id).eq('provider', 'canvas')
+    setTokens(prev => prev.filter(t => t.provider !== 'canvas'))
   }
 
   const addShortcut = async (e: React.FormEvent) => {
@@ -113,6 +73,8 @@ export default function IntegrationsPage() {
     setShortcuts(prev => prev.filter(s => s.id !== id))
   }
 
+  const canvasToken = tokens.find(t => t.provider === 'canvas')
+
   if (loading) return <div className="p-8 text-stone-400">Loading…</div>
 
   return (
@@ -120,54 +82,60 @@ export default function IntegrationsPage() {
       <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-50 mb-2">Integrations</h1>
       <p className="text-stone-500 dark:text-stone-400 text-sm mb-8">Connect external services to sync your data automatically.</p>
 
-      {/* Service integrations */}
-      <div className="space-y-4 mb-10">
-        {INTEGRATIONS.map(integration => {
-          const connected = tokens.find(t => t.provider === integration.id)
-          return (
-            <div key={integration.id} className="rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-stone-900 dark:text-stone-50">{integration.name}</h3>
-                    {connected && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">Connected</span>
-                    )}
-                  </div>
-                  <p className="text-sm text-stone-500 dark:text-stone-400">{integration.description}</p>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  {connected ? (
-                    <button onClick={() => disconnectProvider(integration.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                      <Trash2 className="w-3.5 h-3.5" /> Disconnect
-                    </button>
-                  ) : (
-                    <>
-                      {integration.id === 'garmin' && (
-                        <button onClick={connectGarmin} className="px-3 py-1.5 rounded-lg bg-rose-500 text-white text-sm font-medium hover:bg-rose-600 transition-colors">
-                          Connect
-                        </button>
-                      )}
-                      {integration.id === 'bevel' && (
-                        <button onClick={connectBevel} className="px-3 py-1.5 rounded-lg bg-rose-500 text-white text-sm font-medium hover:bg-rose-600 transition-colors">
-                          Connect
-                        </button>
-                      )}
-                      {integration.id === 'canvas' && (
-                        <button onClick={() => setShowCanvasForm(true)} className="px-3 py-1.5 rounded-lg bg-rose-500 text-white text-sm font-medium hover:bg-rose-600 transition-colors">
-                          Connect
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
+      {/* Health & Fitness — mobile */}
+      <div className="rounded-2xl bg-gradient-to-br from-rose-50 to-orange-50 dark:from-rose-950/30 dark:to-orange-950/30 border border-rose-200 dark:border-rose-900 p-5 mb-4">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center shrink-0">
+            <Watch className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-semibold text-stone-900 dark:text-stone-50">Health &amp; Fitness Sync</h3>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300">Mobile app</span>
             </div>
-          )
-        })}
+            <p className="text-sm text-stone-600 dark:text-stone-400 mb-3">
+              Garmin, Apple Watch, Fitbit, and other wearables sync automatically through Apple Health (iPhone) or Google Health Connect (Android). The mobile app will read your workout history, steps, heart rate, and sleep directly — no additional setup needed.
+            </p>
+            <div className="flex items-center gap-2">
+              <Smartphone className="w-4 h-4 text-stone-400" />
+              <p className="text-xs text-stone-400">Available in the upcoming iOS &amp; Android app</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Quick Links / App Shortcuts */}
+      {/* Canvas LMS */}
+      <div className="rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-5 mb-10">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-semibold text-stone-900 dark:text-stone-50">Canvas LMS</h3>
+              {canvasToken && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">Connected</span>
+              )}
+            </div>
+            <p className="text-sm text-stone-500 dark:text-stone-400">Sync courses and assignments from your Canvas account.</p>
+            {canvasToken && (
+              <p className="text-xs text-stone-400 mt-1">
+                Instance: {(canvasToken.metadata as { instance_url?: string } | null)?.instance_url ?? '—'}
+              </p>
+            )}
+          </div>
+          <div className="shrink-0">
+            {canvasToken ? (
+              <button onClick={disconnectCanvas} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                <Trash2 className="w-3.5 h-3.5" /> Disconnect
+              </button>
+            ) : (
+              <button onClick={() => setShowCanvasForm(true)} className="px-3 py-1.5 rounded-lg bg-rose-500 text-white text-sm font-medium hover:bg-rose-600 transition-colors">
+                Connect
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Links */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-50">Quick Links</h2>
@@ -175,10 +143,10 @@ export default function IntegrationsPage() {
             <Plus className="w-4 h-4" /> Add link
           </button>
         </div>
-        <p className="text-sm text-stone-400 mb-4">Saved links appear as quick-access buttons in relevant modules.</p>
+        <p className="text-sm text-stone-400 mb-4">Saved links appear as quick-access buttons in relevant modules. Add Gospel Library, study resources, etc.</p>
         {shortcuts.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-stone-300 dark:border-stone-700 p-6 text-center text-stone-400 text-sm">
-            No shortcuts yet. Add links to Gospel Library, study resources, etc.
+            No shortcuts yet.
           </div>
         ) : (
           <div className="space-y-2">
