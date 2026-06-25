@@ -1,0 +1,11 @@
+export { supabase } from './client'
+export type { Database } from './database.types'
+
+export * from './queries/household'
+export * from './queries/pantry'
+export * from './queries/budget'
+export * from './queries/nutrition'
+export * from './queries/workouts'
+export * from './queries/journal'
+export * from './queries/school'
+export * from './queries/religious'
