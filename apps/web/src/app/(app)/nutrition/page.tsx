@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { Plus, Search } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { Plus, Search, Barcode, X } from 'lucide-react'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
@@ -37,6 +37,8 @@ export default function NutritionPage() {
   const { user } = useAuth()
   const supabase = createClient()
   const today = todayISO()
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const [entries, setEntries] = useState<FoodEntry[]>([])
   const [goals, setGoals] = useState<NutritionGoals | null>(null)
   const [showAdd, setShowAdd] = useState(false)
@@ -45,6 +47,9 @@ export default function NutritionPage() {
   const [searching, setSearching] = useState(false)
   const [selectedMeal, setSelectedMeal] = useState<FoodEntry['meal_type']>('breakfast')
   const [loading, setLoading] = useState(true)
+  const [showBarcode, setShowBarcode] = useState(false)
+  const [barcodeInput, setBarcodeInput] = useState('')
+  const [barcodeSearching, setBarcodeSearching] = useState(false)
 
   useEffect(() => {
     if (!user || !householdId) return
@@ -71,6 +76,38 @@ export default function NutritionPage() {
       setResults(r)
     } finally {
       setSearching(false)
+    }
+  }
+
+  const searchByBarcode = async (barcode: string) => {
+    if (!barcode.trim()) return
+    setBarcodeSearching(true)
+    try {
+      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`)
+      if (!res.ok) throw new Error('Product not found')
+      const data = await res.json()
+      if (data.product) {
+        const product = data.product
+        const food: FoodSearchResult = {
+          fdcId: barcode,
+          description: product.product_name || 'Unknown product',
+          brandOwner: product.brands || null,
+          calories: product.nutriments?.['energy-kcal'] || 0,
+          protein_g: product.nutriments?.proteins || 0,
+          carbs_g: product.nutriments?.carbohydrates || 0,
+          fat_g: product.nutriments?.fat || 0,
+          fiber_g: product.nutriments?.fiber || 0,
+          sodium_mg: (product.nutriments?.salt || 0) * 1000,
+        }
+        setResults([food])
+        setBarcodeInput('')
+      } else {
+        alert('Product not found in database')
+      }
+    } catch (err) {
+      alert('Error scanning barcode. Try searching manually.')
+    } finally {
+      setBarcodeSearching(false)
     }
   }
 
@@ -143,12 +180,20 @@ export default function NutritionPage() {
             </h3>
             <div className="space-y-2">
               {mealEntries.map(entry => (
-                <div key={entry.id} className="flex items-center justify-between rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 px-4 py-3">
-                  <div>
-                    <p className="text-sm font-medium text-stone-900 dark:text-stone-50">{entry.food_name}</p>
-                    {entry.brand && <p className="text-xs text-stone-400">{entry.brand}</p>}
+                <div key={entry.id} className="rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 px-4 py-3">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-stone-900 dark:text-stone-50">{entry.food_name}</p>
+                      {entry.brand && <p className="text-xs text-stone-400">{entry.brand}</p>}
+                    </div>
+                    <p className="text-sm font-semibold text-stone-700 dark:text-stone-300 whitespace-nowrap ml-2">{Math.round(entry.calories)} kcal</p>
                   </div>
-                  <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">{Math.round(entry.calories)} kcal</p>
+                  <div className="flex gap-3 text-xs text-stone-500 dark:text-stone-400">
+                    <span>P {Math.round(entry.protein_g ?? 0)}g</span>
+                    <span>C {Math.round(entry.carbs_g ?? 0)}g</span>
+                    <span>F {Math.round(entry.fat_g ?? 0)}g</span>
+                    {entry.fiber_g ? <span>Fiber {Math.round(entry.fiber_g)}g</span> : null}
+                  </div>
                 </div>
               ))}
             </div>
@@ -160,31 +205,62 @@ export default function NutritionPage() {
       {showAdd && (
         <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-stone-900 rounded-2xl p-6 w-full max-w-md max-h-[90vh] flex flex-col">
-            <h3 className="font-semibold text-stone-900 dark:text-stone-50 mb-4">Log food</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-stone-900 dark:text-stone-50">Log food</h3>
+              <button onClick={() => { setShowAdd(false); setResults([]); setQuery(''); setShowBarcode(false); }} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded">
+                <X className="w-5 h-5 text-stone-400" />
+              </button>
+            </div>
+
             <select
               value={selectedMeal}
               onChange={e => setSelectedMeal(e.target.value as FoodEntry['meal_type'])}
-              className="w-full rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-4 py-2.5 text-stone-900 dark:text-stone-50 mb-3 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-4 py-2.5 text-stone-900 dark:text-stone-50 mb-4 focus:outline-none focus:ring-2 focus:ring-rose-500"
             >
               {['breakfast', 'lunch', 'dinner', 'snack'].map(m => (
                 <option key={m} value={m} className="capitalize">{m.charAt(0).toUpperCase() + m.slice(1)}</option>
               ))}
             </select>
-            <div className="flex gap-2 mb-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-                <input
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && doSearch()}
-                  placeholder="Search USDA food database…"
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 focus:outline-none focus:ring-2 focus:ring-rose-500"
-                />
+
+            {showBarcode ? (
+              <div className="mb-4">
+                <div className="flex gap-2 mb-3">
+                  <input
+                    value={barcodeInput}
+                    onChange={e => setBarcodeInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && searchByBarcode(barcodeInput)}
+                    placeholder="Enter or scan barcode…"
+                    autoFocus
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  />
+                  <button onClick={() => setShowBarcode(false)} className="px-4 py-2 rounded-xl bg-stone-200 dark:bg-stone-700 text-sm font-medium">
+                    Back
+                  </button>
+                </div>
+                <button onClick={() => searchByBarcode(barcodeInput)} disabled={barcodeSearching} className="w-full py-2 rounded-xl bg-rose-500 text-white text-sm font-medium disabled:opacity-50">
+                  {barcodeSearching ? 'Searching…' : 'Search'}
+                </button>
               </div>
-              <button onClick={doSearch} disabled={searching} className="px-4 py-2 rounded-xl bg-stone-800 dark:bg-stone-700 text-white text-sm font-medium disabled:opacity-50">
-                {searching ? '…' : 'Search'}
-              </button>
-            </div>
+            ) : (
+              <div className="flex gap-2 mb-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                  <input
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && doSearch()}
+                    placeholder="Search USDA food database…"
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  />
+                </div>
+                <button onClick={doSearch} disabled={searching} className="px-4 py-2 rounded-xl bg-stone-800 dark:bg-stone-700 text-white text-sm font-medium disabled:opacity-50">
+                  {searching ? '…' : 'Search'}
+                </button>
+                <button onClick={() => setShowBarcode(true)} className="px-4 py-2 rounded-xl bg-rose-500 text-white text-sm font-medium hover:bg-rose-600">
+                  <Barcode className="w-4 h-4" />
+                </button>
+              </div>
+            )}
             <div className="overflow-y-auto flex-1 space-y-2">
               {results.map(r => (
                 <button
@@ -193,13 +269,18 @@ export default function NutritionPage() {
                   className="w-full text-left rounded-xl border border-stone-200 dark:border-stone-700 px-4 py-3 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
                 >
                   <p className="text-sm font-medium text-stone-900 dark:text-stone-50 line-clamp-1">{r.description}</p>
-                  <p className="text-xs text-stone-400">{Math.round(r.calories)} kcal · P {Math.round(r.protein_g)}g · C {Math.round(r.carbs_g)}g · F {Math.round(r.fat_g)}g</p>
+                  {r.brandOwner && <p className="text-xs text-stone-500 dark:text-stone-400">{r.brandOwner}</p>}
+                  <p className="text-xs text-stone-400 mt-1">
+                    {Math.round(r.calories)} kcal · P {Math.round(r.protein_g)}g · C {Math.round(r.carbs_g)}g · F {Math.round(r.fat_g)}g
+                  </p>
+                  {(r.fiber_g || r.sodium_mg) && (
+                    <p className="text-xs text-stone-500 dark:text-stone-400">
+                      {r.fiber_g ? `Fiber ${Math.round(r.fiber_g)}g` : ''}{r.fiber_g && r.sodium_mg ? ' · ' : ''}{r.sodium_mg ? `Sodium ${Math.round(r.sodium_mg)}mg` : ''}
+                    </p>
+                  )}
                 </button>
               ))}
             </div>
-            <button onClick={() => { setShowAdd(false); setResults([]); setQuery('') }} className="mt-4 w-full py-2 rounded-xl border border-stone-300 dark:border-stone-700 text-sm font-medium text-stone-700 dark:text-stone-300">
-              Cancel
-            </button>
           </div>
         </div>
       )}
