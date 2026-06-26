@@ -221,13 +221,16 @@ export default function BudgetPage() {
       console.log('Parsed rows:', rows.length)
       if (rows.length < 2) throw new Error('CSV file is empty')
 
-    const headers = rows[0]
+    const headers = rows[0].map(h => h.trim())
+    console.log('Headers found:', headers)
     const dateIdx = headers.findIndex(h => h === 'Posting Date')
     const amountIdx = headers.findIndex(h => h === 'Amount')
     const descIdx = headers.findIndex(h => h === 'Description')
 
+    console.log('Column indices:', { dateIdx, amountIdx, descIdx })
+
     if (dateIdx === -1 || amountIdx === -1 || descIdx === -1) {
-      throw new Error('CSV missing required columns: Posting Date, Amount, Description')
+      throw new Error(`CSV missing required columns. Found: ${headers.slice(0, 5).join(', ')}...`)
     }
 
     const transactions = []
