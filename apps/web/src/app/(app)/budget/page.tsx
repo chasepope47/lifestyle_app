@@ -45,6 +45,7 @@ export default function BudgetPage() {
   const [swipeDirection, setSwipeDirection] = useState<SwipeDirection | null>(null)
   const [swipeOffset, setSwipeOffset] = useState({ x: 0, y: 0 })
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
+  const [showAllTransactions, setShowAllTransactions] = useState(false)
   const [showAddAccount, setShowAddAccount] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
   const [accountForm, setAccountForm] = useState<{ name: string; type: 'checking' | 'savings' | 'credit' | 'cash' | 'investment'; balance: string; currency: string }>({ name: '', type: 'checking', balance: '', currency: 'USD' })
@@ -596,14 +597,22 @@ export default function BudgetPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-stone-50">Recent Transactions</h3>
-          {unreviewed.length > 0 && (
+          <div className="flex items-center gap-2">
+            {unreviewed.length > 0 && (
+              <button
+                onClick={() => setView('review')}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
+              >
+                Review {unreviewed.length}
+              </button>
+            )}
             <button
-              onClick={() => setView('review')}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
+              onClick={() => setShowAllTransactions(true)}
+              className="px-4 py-2 rounded-lg bg-stone-700 hover:bg-stone-600 text-stone-300 text-sm font-medium transition-colors"
             >
-              Review {unreviewed.length}
+              View all ({monthTransactions.length})
             </button>
-          )}
+          </div>
         </div>
 
         {menuOpenId && (
@@ -651,6 +660,63 @@ export default function BudgetPage() {
           })}
         </div>
       </div>
+
+      {/* All transactions modal */}
+      {showAllTransactions && (
+        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="bg-stone-900 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-stone-700 flex-shrink-0">
+              <h3 className="text-lg font-semibold text-stone-50">
+                {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} — {monthTransactions.length} transactions
+              </h3>
+              <button onClick={() => { setShowAllTransactions(false); setMenuOpenId(null); }} className="p-1 hover:bg-stone-800 rounded">
+                <X className="w-5 h-5 text-stone-400" />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-4 space-y-2">
+              {monthTransactions.map(tx => {
+                const catColor = tx.category ? CATEGORY_COLORS[tx.category as keyof typeof CATEGORY_COLORS] : { bg: 'bg-stone-700', light: 'bg-stone-700/20', text: 'text-stone-400' }
+                return (
+                  <div key={tx.id} className={`flex items-center gap-3 rounded-xl border border-stone-700 p-3 ${catColor.light}`}>
+                    <div className={`w-9 h-9 rounded-lg ${catColor.bg} flex-shrink-0 flex items-center justify-center text-white font-bold text-xs`}>
+                      {(tx.description || 'TX').substring(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-stone-50 truncate">{tx.description}</p>
+                      <p className="text-xs text-stone-400">{new Date(tx.transaction_date).toLocaleDateString()}</p>
+                    </div>
+                    <p className="text-sm font-semibold text-stone-50 flex-shrink-0">{formatCurrency(Math.abs(tx.amount))}</p>
+                    <div className="relative flex-shrink-0">
+                      <button
+                        onClick={() => setMenuOpenId(menuOpenId === tx.id ? null : tx.id)}
+                        className="p-1 hover:bg-stone-700/50 rounded"
+                      >
+                        <MoreHorizontal className="w-4 h-4 text-stone-500" />
+                      </button>
+                      {menuOpenId === tx.id && (
+                        <div className="absolute right-0 top-7 z-20 bg-stone-800 border border-stone-600 rounded-xl shadow-xl p-1.5 min-w-[148px]">
+                          <p className="text-xs text-stone-500 px-2 py-1 mb-0.5">Set category</p>
+                          {(['needs', 'wants', 'savings', 'transfers'] as const).map(cat => (
+                            <button
+                              key={cat}
+                              onClick={() => changeTransactionCategory(tx.id, cat)}
+                              className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors ${tx.category === cat ? 'text-white bg-stone-700' : 'text-stone-300 hover:bg-stone-700'}`}
+                            >
+                              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${CATEGORY_COLORS[cat].bg}`} />
+                              <span className="capitalize">{cat}</span>
+                              {tx.category === cat && <span className="ml-auto text-stone-400 text-xs">✓</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Accounts */}
       <div>
