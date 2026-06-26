@@ -171,30 +171,74 @@ export default function BudgetPage() {
     return (data?.length ?? 0) > 0
   }
 
+  const parseCSVTransactions = async (file: File, accountId: string) => {
+    const text = await file.text()
+    const lines = text.split('\n')
+    if (lines.length < 2) throw new Error('CSV file is empty')
+
+    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''))
+    const dateIdx = headers.findIndex(h => h === 'Posting Date')
+    const amountIdx = headers.findIndex(h => h === 'Amount')
+    const descIdx = headers.findIndex(h => h === 'Description')
+
+    if (dateIdx === -1 || amountIdx === -1 || descIdx === -1) {
+      throw new Error('CSV missing required columns: Posting Date, Amount, Description')
+    }
+
+    const transactions = []
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue
+
+      const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''))
+      const date = cols[dateIdx]
+      const amount = parseFloat(cols[amountIdx])
+      const description = cols[descIdx]
+
+      if (!date || isNaN(amount) || !description) continue
+
+      const isDup = await isExactDuplicate(accountId, amount, description, date)
+      if (!isDup) {
+        transactions.push({
+          account_id: accountId,
+          amount,
+          description,
+          transaction_date: date,
+          household_id: householdId,
+          user_id: user?.id,
+          merchant: cols[headers.findIndex(h => h === 'Extended Description')] || '',
+          notes: cols[headers.findIndex(h => h === 'Transaction Category')] || '',
+        })
+      }
+    }
+
+    return transactions
+  }
+
   const uploadStatement = async () => {
-    if (!statementFile || !editingAccount || !user) return
+    if (!statementFile || !editingAccount || !user || !householdId) return
     try {
       const fileName = `${editingAccount.id}/${Date.now()}-${statementFile.name}`
       const { error } = await supabase.storage.from('bank_statements').upload(fileName, statementFile)
       if (error) throw error
 
-      // TODO: Insert into bank_statements table once migrations are applied
-      // const { error: dbError } = await supabase.from('bank_statements').insert({
-      //   account_id: editingAccount.id,
-      //   file_name: statementFile.name,
-      //   file_path: fileName,
-      //   statement_month: new Date(),
-      //   uploaded_by: user.id,
-      //   file_size: statementFile.size,
-      // })
-      // if (dbError) throw dbError
+      let importCount = 0
+      if (statementFile.name.endsWith('.csv')) {
+        const newTransactions = await parseCSVTransactions(statementFile, editingAccount.id)
+        if (newTransactions.length > 0) {
+          const { error: insertError } = await supabase.from('transactions').insert(newTransactions)
+          if (insertError) throw insertError
+          importCount = newTransactions.length
+        }
+        alert(`Bank statement imported!\n${importCount} new transactions added.`)
+      } else {
+        alert('Bank statement uploaded successfully! (CSV import adds transactions automatically)')
+      }
 
       setStatementFile(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
-      alert('Bank statement uploaded successfully!')
     } catch (err) {
       console.error('Error uploading statement:', err)
-      alert('Failed to upload bank statement')
+      alert(`Failed to upload bank statement: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 
