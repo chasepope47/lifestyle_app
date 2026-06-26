@@ -88,6 +88,8 @@ export default function BudgetPage() {
       return
     }
     const newUnreviewed = unreviewed.filter(t => t.id !== txId)
+    setSwipeDirection(null)
+    setSwipeOffset({ x: 0, y: 0 })
     setUnreviewed(newUnreviewed)
     if (newUnreviewed.length > 0) {
       if (reviewIndex >= newUnreviewed.length) {
@@ -135,12 +137,12 @@ export default function BudgetPage() {
     if (direction && swipeConfig[direction]) {
       setSwipeDirection(direction)
       const category = swipeConfig[direction]
-      setTimeout(() => {
-        if (view === 'review' && unreviewed.length > reviewIndex) {
-          const current = unreviewed[reviewIndex]
+      const current = unreviewed[reviewIndex]
+      if (current) {
+        setTimeout(() => {
           updateTransactionCategory(current.id, category)
-        }
-      }, 200)
+        }, 200)
+      }
     }
   }
 
