@@ -113,15 +113,18 @@ async function parseTCXorGPX(file: File, supabase: any, householdId: string, use
   const content = await file.text()
   const results = []
 
-  const workoutData = parseTCXorGPXContent(content, file.name)
-  if (!workoutData) {
+  const workoutContent = parseTCXorGPXContent(content, file.name)
+  if (!workoutContent) {
     return [{ success: false, message: 'Unable to parse workout file' }]
   }
 
-  workoutData.user_id = userId
-  workoutData.household_id = householdId
+  const workoutData = {
+    user_id: userId,
+    household_id: householdId,
+    ...workoutContent,
+  }
 
-  const { error } = await supabase.from('workout_sessions').insert(workoutData).select().single()
+  const { error } = await supabase.from('workout_sessions').insert(workoutData)
 
   if (error) {
     results.push({ success: false, message: `Failed to import workout: ${error.message}` })
