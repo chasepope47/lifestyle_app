@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
-import { Plus, ChevronDown, ChevronLeft, ChevronRight, Meh, Frown, Smile, MoreHorizontal, ArrowLeft, Settings } from 'lucide-react'
+import { Plus, ChevronDown, ChevronLeft, ChevronRight, Meh, Frown, Smile, MoreHorizontal, ArrowLeft, Settings, X, Upload, Link2 } from 'lucide-react'
 import { useHousehold } from '@/providers/HouseholdProvider'
+import { useAuth } from '@/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@lifestyle/shared'
 import type { Database } from '@lifestyle/db'
@@ -25,6 +26,7 @@ const TRANSACTION_CATEGORIES = [
 
 export default function BudgetPage() {
   const { householdId } = useHousehold()
+  const { user } = useAuth()
   const supabase = createClient()
   const [view, setView] = useState<'dashboard' | 'review'>('dashboard')
   const [accounts, setAccounts] = useState<Account[]>([])
@@ -42,6 +44,9 @@ export default function BudgetPage() {
   const [showSwipeSettings, setShowSwipeSettings] = useState(false)
   const [swipeDirection, setSwipeDirection] = useState<SwipeDirection | null>(null)
   const [swipeOffset, setSwipeOffset] = useState({ x: 0, y: 0 })
+  const [showAddAccount, setShowAddAccount] = useState(false)
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null)
+  const [accountForm, setAccountForm] = useState({ name: '', type: 'checking', balance: '', currency: 'USD' })
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
@@ -98,6 +103,51 @@ export default function BudgetPage() {
     } else {
       setView('dashboard')
     }
+  }
+
+  const saveAccount = async () => {
+    if (!householdId || !user) return
+    try {
+      if (editingAccount) {
+        await supabase.from('budget_accounts').update({
+          name: accountForm.name,
+          type: accountForm.type,
+          balance: parseFloat(accountForm.balance),
+          currency: accountForm.currency,
+        }).eq('id', editingAccount.id)
+      } else {
+        await supabase.from('budget_accounts').insert({
+          household_id: householdId,
+          name: accountForm.name,
+          type: accountForm.type,
+          balance: parseFloat(accountForm.balance),
+          currency: accountForm.currency,
+          created_by: user.id,
+        })
+      }
+      setAccounts(prev => {
+        if (editingAccount) {
+          return prev.map(a => a.id === editingAccount.id ? { ...a, ...accountForm, balance: parseFloat(accountForm.balance) } : a)
+        }
+        return prev
+      })
+      setShowAddAccount(false)
+      setEditingAccount(null)
+      setAccountForm({ name: '', type: 'checking', balance: '', currency: 'USD' })
+    } catch (err) {
+      console.error('Error saving account:', err)
+    }
+  }
+
+  const openEditAccount = (account: Account) => {
+    setEditingAccount(account)
+    setAccountForm({
+      name: account.name,
+      type: account.type,
+      balance: account.balance.toString(),
+      currency: account.currency || 'USD',
+    })
+    setShowAddAccount(true)
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -415,25 +465,107 @@ export default function BudgetPage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-stone-50">Accounts</h3>
-          <button className="text-blue-400 hover:text-blue-300 text-sm font-medium">Add Account</button>
+          <button onClick={() => { setShowAddAccount(true); setEditingAccount(null); setAccountForm({ name: '', type: 'checking', balance: '', currency: 'USD' }); }} className="flex items-center gap-2 px-3 py-1 text-blue-400 hover:text-blue-300 text-sm font-medium">
+            <Plus className="w-4 h-4" /> Add
+          </button>
         </div>
         <div className="space-y-2">
           {accounts.map(acc => (
-            <div key={acc.id} className="flex items-center justify-between rounded-xl bg-stone-800 dark:bg-stone-900 border border-stone-700 dark:border-stone-800 p-4">
+            <button key={acc.id} onClick={() => openEditAccount(acc)} className="w-full text-left flex items-center justify-between rounded-xl bg-stone-800 dark:bg-stone-900 border border-stone-700 dark:border-stone-800 p-4 hover:border-stone-600 dark:hover:border-stone-700 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-stone-700 flex items-center justify-center">
                   <div className="w-3 h-3 rounded-full bg-green-500" />
                 </div>
                 <div>
                   <p className="font-medium text-stone-50">{acc.name}</p>
-                  <p className="text-xs text-stone-400">{acc.currency || 'USD'}</p>
+                  <p className="text-xs text-stone-400">{acc.type} · {acc.currency || 'USD'}</p>
                 </div>
               </div>
               <p className="font-semibold text-stone-50">{formatCurrency(acc.balance)}</p>
-            </div>
+            </button>
           ))}
         </div>
       </div>
+
+      {/* Add/Edit Account Modal */}
+      {showAddAccount && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="bg-stone-900 rounded-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-stone-50">{editingAccount ? 'Edit Account' : 'Add Account'}</h3>
+              <button onClick={() => { setShowAddAccount(false); setEditingAccount(null); }} className="p-1 hover:bg-stone-800 rounded">
+                <X className="w-5 h-5 text-stone-400" />
+              </button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-stone-300 mb-2">Account Name</label>
+                <input
+                  type="text"
+                  value={accountForm.name}
+                  onChange={e => setAccountForm(p => ({ ...p, name: e.target.value }))}
+                  placeholder="e.g., Checking, Savings"
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-800 text-stone-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-stone-300 mb-2">Type</label>
+                <select
+                  value={accountForm.type}
+                  onChange={e => setAccountForm(p => ({ ...p, type: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-800 text-stone-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="checking">Checking</option>
+                  <option value="savings">Savings</option>
+                  <option value="credit">Credit Card</option>
+                  <option value="cash">Cash</option>
+                  <option value="investment">Investment</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-stone-300 mb-2">Balance</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={accountForm.balance}
+                    onChange={e => setAccountForm(p => ({ ...p, balance: e.target.value }))}
+                    placeholder="0.00"
+                    className="w-full px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-800 text-stone-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-300 mb-2">Currency</label>
+                  <input
+                    type="text"
+                    value={accountForm.currency}
+                    onChange={e => setAccountForm(p => ({ ...p, currency: e.target.value.toUpperCase() }))}
+                    placeholder="USD"
+                    maxLength={3}
+                    className="w-full px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-800 text-stone-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={saveAccount}
+              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors mb-2"
+            >
+              {editingAccount ? 'Update Account' : 'Create Account'}
+            </button>
+            <button
+              onClick={() => { setShowAddAccount(false); setEditingAccount(null); }}
+              className="w-full py-2 rounded-xl border border-stone-600 text-stone-300 font-medium hover:bg-stone-800 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
