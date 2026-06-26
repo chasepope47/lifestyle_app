@@ -94,7 +94,7 @@ export default function BudgetPage() {
       const { error } = await supabase.from('transactions').update({ category, emotion }).eq('id', txId)
       if (error) {
         console.error('Failed to update transaction:', error)
-        alert('Failed to save category. Please try again.')
+        alert(`Failed to save category: ${error.message}`)
         return
       }
       console.log('Transaction updated successfully')
