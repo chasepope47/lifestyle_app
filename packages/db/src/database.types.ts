@@ -935,6 +935,69 @@ export interface Database {
         }
         Relationships: []
       }
+      webauthn_credentials: {
+        Row: {
+          id: string
+          user_id: string
+          credential_id: string
+          public_key: string
+          counter: number
+          device_name: string | null
+          transports: string | null
+          backed_up: boolean | null
+          created_at: string
+          last_used_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          credential_id: string
+          public_key: string
+          counter?: number
+          device_name?: string | null
+          transports?: string | null
+          backed_up?: boolean | null
+          created_at?: string
+          last_used_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          credential_id?: string
+          public_key?: string
+          counter?: number
+          device_name?: string | null
+          transports?: string | null
+          backed_up?: boolean | null
+          created_at?: string
+          last_used_at?: string | null
+        }
+        Relationships: []
+      }
+      webauthn_challenges: {
+        Row: {
+          id: string
+          user_id: string | null
+          challenge: string
+          expires_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          challenge: string
+          expires_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          challenge?: string
+          expires_at?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
