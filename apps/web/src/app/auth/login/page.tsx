@@ -20,12 +20,19 @@ function LoginPageContent() {
   const [loggedInEmail, setLoggedInEmail] = useState<string | null>(null)
 
   useEffect(() => {
-    // Check if the browser supports WebAuthn passkeys
     if (typeof window !== 'undefined' && window.PublicKeyCredential) {
+      const hasStoredPasskey = localStorage.getItem('passkey_registered') === '1'
       window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable?.()
-        .then(available => setPasskeyAvailable(available))
+        .then(available => {
+          setPasskeyAvailable(available)
+          // Auto-trigger biometric prompt if this device already has a passkey set up
+          if (available && hasStoredPasskey) {
+            signInWithPasskey()
+          }
+        })
         .catch(() => setPasskeyAvailable(false))
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const signInWithPasskey = async () => {
@@ -64,6 +71,10 @@ function LoginPageContent() {
       const msg = err instanceof Error ? err.message : String(err)
       // User cancellation is not an error worth surfacing
       if (!msg.toLowerCase().includes('cancel') && !msg.toLowerCase().includes('abort')) {
+        // If the passkey isn't recognized (e.g. cleared from server), remove stale flag
+        if (msg.toLowerCase().includes('not recognized')) {
+          localStorage.removeItem('passkey_registered')
+        }
         setError(msg)
       }
     } finally {
@@ -83,8 +94,9 @@ function LoginPageContent() {
       return
     }
 
-    // After successful password login, offer passkey registration if not already set up
-    if (passkeyAvailable && data.user) {
+    // After successful password login, offer passkey registration if not already set up on this device
+    const hasStoredPasskey = localStorage.getItem('passkey_registered') === '1'
+    if (passkeyAvailable && data.user && !hasStoredPasskey) {
       setLoggedInEmail(data.user.email ?? null)
       setShowPasskeyPrompt(true)
       setLoading(false)
@@ -115,6 +127,8 @@ function LoginPageContent() {
       const verifyData = await verifyRes.json()
       if (!verifyRes.ok) throw new Error(verifyData.error ?? 'Failed to register passkey')
 
+      // Remember that this device has a passkey so we auto-prompt next time
+      localStorage.setItem('passkey_registered', '1')
       router.push(params.get('redirectTo') ?? '/dashboard')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
