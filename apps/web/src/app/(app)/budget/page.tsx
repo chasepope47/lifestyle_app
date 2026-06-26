@@ -47,6 +47,8 @@ export default function BudgetPage() {
   const [showAddAccount, setShowAddAccount] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
   const [accountForm, setAccountForm] = useState({ name: '', type: 'checking', balance: '', currency: 'USD' })
+  const [statementFile, setStatementFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
@@ -147,7 +149,34 @@ export default function BudgetPage() {
       balance: account.balance.toString(),
       currency: account.currency || 'USD',
     })
+    setStatementFile(null)
     setShowAddAccount(true)
+  }
+
+  const uploadStatement = async () => {
+    if (!statementFile || !editingAccount || !user) return
+    try {
+      const fileName = `${editingAccount.id}/${Date.now()}-${statementFile.name}`
+      const { error } = await supabase.storage.from('bank_statements').upload(fileName, statementFile)
+      if (error) throw error
+
+      const { error: dbError } = await supabase.from('bank_statements').insert({
+        account_id: editingAccount.id,
+        file_name: statementFile.name,
+        file_path: fileName,
+        statement_month: new Date(),
+        uploaded_by: user.id,
+        file_size: statementFile.size,
+      })
+      if (dbError) throw dbError
+
+      setStatementFile(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      alert('Bank statement uploaded successfully!')
+    } catch (err) {
+      console.error('Error uploading statement:', err)
+      alert('Failed to upload bank statement')
+    }
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -557,6 +586,51 @@ export default function BudgetPage() {
             >
               {editingAccount ? 'Update Account' : 'Create Account'}
             </button>
+
+            {editingAccount && (
+              <>
+                <div className="my-6 border-t border-stone-700" />
+
+                <div className="mb-4">
+                  <h4 className="text-sm font-semibold text-stone-300 mb-3">Bank Statements</h4>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-800 hover:bg-stone-700 text-stone-300 text-sm font-medium transition-colors"
+                    >
+                      <Upload className="w-4 h-4" /> Upload Statement
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf,.csv,.xlsx,.xls"
+                      onChange={e => setStatementFile(e.target.files?.[0] || null)}
+                      className="hidden"
+                    />
+                  </div>
+                  {statementFile && (
+                    <div className="mt-2 p-3 bg-stone-800 rounded-lg flex items-center justify-between">
+                      <span className="text-xs text-stone-300 truncate">{statementFile.name}</span>
+                      <button
+                        onClick={uploadStatement}
+                        className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors"
+                      >
+                        Upload
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mb-4">
+                  <h4 className="text-sm font-semibold text-stone-300 mb-3">Connect Bank Account</h4>
+                  <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-800 text-stone-400 text-sm font-medium cursor-not-allowed opacity-50">
+                    <Link2 className="w-4 h-4" /> Connect with Plaid
+                  </button>
+                  <p className="text-xs text-stone-500 mt-2">Coming soon - automatically sync transactions from your bank</p>
+                </div>
+              </>
+            )}
+
             <button
               onClick={() => { setShowAddAccount(false); setEditingAccount(null); }}
               className="w-full py-2 rounded-xl border border-stone-600 text-stone-300 font-medium hover:bg-stone-800 transition-colors"
