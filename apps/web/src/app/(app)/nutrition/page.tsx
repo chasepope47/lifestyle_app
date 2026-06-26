@@ -278,8 +278,33 @@ export default function NutritionPage() {
   const handleSelectFood = (food: FoodSearchResult) => {
     setPendingFood(food)
     setQuantity(1)
-    setWeightValue('100')
     setWeightUnit('g')
+    // Pre-fill weight from serving size if known, otherwise 100g
+    setWeightValue(
+      resultSource === 'search' && food.servingSizeG
+        ? String(Math.round(food.servingSizeG * 10) / 10)
+        : '100'
+    )
+  }
+
+  const handleQuantityChange = (newQty: number, food: FoodSearchResult) => {
+    setQuantity(newQty)
+    if (food.servingSizeG) {
+      const grams = food.servingSizeG * newQty
+      const converted = weightUnit === 'oz' ? grams / 28.3495
+                      : weightUnit === 'lbs' ? grams / 453.592
+                      : grams
+      setWeightValue(String(Math.round(converted * 10) / 10))
+    }
+  }
+
+  const handleUnitChange = (newUnit: 'g' | 'oz' | 'lbs') => {
+    const currentGrams = toGrams(parseFloat(weightValue) || 0, weightUnit)
+    const converted = newUnit === 'oz' ? currentGrams / 28.3495
+                    : newUnit === 'lbs' ? currentGrams / 453.592
+                    : currentGrams
+    setWeightValue(String(Math.round(converted * 10) / 10))
+    setWeightUnit(newUnit)
   }
 
   // Defined before startCamera so the ZXing callback can reference it
@@ -765,27 +790,57 @@ export default function NutritionPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="mb-4">
-                    <p className="text-sm font-medium text-stone-300 mb-1">How much did you eat?</p>
-                    <p className="text-xs text-stone-500 mb-3">Values are per 100g — enter your actual amount to scale</p>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        value={weightValue}
-                        onChange={e => setWeightValue(e.target.value)}
-                        min="0"
-                        step="any"
-                        className="flex-1 px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-800 text-stone-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      />
-                      <select
-                        value={weightUnit}
-                        onChange={e => setWeightUnit(e.target.value as 'g' | 'oz' | 'lbs')}
-                        className="px-3 py-2.5 rounded-xl border border-stone-600 bg-stone-800 text-stone-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      >
-                        <option value="g">g</option>
-                        <option value="oz">oz</option>
-                        <option value="lbs">lbs</option>
-                      </select>
+                  <div className="mb-4 space-y-4">
+                    {/* Quantity stepper */}
+                    <div>
+                      <p className="text-sm font-medium text-stone-300 mb-2">How many servings?</p>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleQuantityChange(Math.max(0.5, Math.round((quantity - 0.5) * 10) / 10), pendingFood!)}
+                          className="w-11 h-11 rounded-xl bg-stone-700 text-stone-100 text-2xl flex items-center justify-center hover:bg-stone-600 transition-colors"
+                        >−</button>
+                        <span className="flex-1 text-center text-2xl font-bold text-stone-50">
+                          {quantity % 1 === 0 ? quantity : quantity.toFixed(1)}
+                        </span>
+                        <button
+                          onClick={() => handleQuantityChange(Math.round((quantity + 0.5) * 10) / 10, pendingFood!)}
+                          className="w-11 h-11 rounded-xl bg-stone-700 text-stone-100 text-2xl flex items-center justify-center hover:bg-stone-600 transition-colors"
+                        >+</button>
+                      </div>
+                      {pendingFood?.servingSizeG ? (
+                        <p className="text-xs text-stone-500 text-center mt-1.5">
+                          1 serving = {pendingFood.servingSizeG % 1 === 0 ? pendingFood.servingSizeG : pendingFood.servingSizeG.toFixed(1)}g
+                        </p>
+                      ) : (
+                        <p className="text-xs text-stone-500 text-center mt-1.5">No serving size on file — adjust weight below</p>
+                      )}
+                    </div>
+
+                    {/* Weight input (auto-fills from qty × serving, still editable) */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium text-stone-300">Or enter exact weight</p>
+                        <span className="text-xs text-stone-500">Values are per 100g</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          value={weightValue}
+                          onChange={e => setWeightValue(e.target.value)}
+                          min="0"
+                          step="any"
+                          className="flex-1 px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-800 text-stone-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                        <select
+                          value={weightUnit}
+                          onChange={e => handleUnitChange(e.target.value as 'g' | 'oz' | 'lbs')}
+                          className="px-3 py-2.5 rounded-xl border border-stone-600 bg-stone-800 text-stone-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        >
+                          <option value="g">g</option>
+                          <option value="oz">oz</option>
+                          <option value="lbs">lbs</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                 )}

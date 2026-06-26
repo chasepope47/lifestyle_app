@@ -39,6 +39,13 @@ export async function GET(request: Request) {
       )
 
       if (match) {
+        const ss = (match as Record<string, unknown>).servingSize as number | undefined
+        const ssu = (match as Record<string, unknown>).servingSizeUnit as string | undefined
+        let servingSizeG: number | undefined
+        if (ss && ssu) {
+          const u = ssu.toLowerCase()
+          servingSizeG = u === 'oz' || u === 'ounce' ? ss * 28.3495 : ss
+        }
         return NextResponse.json({
           fdcId: match.fdcId,
           description: match.description,
@@ -49,6 +56,7 @@ export async function GET(request: Request) {
           fat_g: get(match.foodNutrients, N.fat),
           fiber_g: get(match.foodNutrients, N.fiber),
           sodium_mg: get(match.foodNutrients, N.sodium),
+          servingSizeG,
         })
       }
     }
@@ -72,6 +80,17 @@ export async function GET(request: Request) {
 
       const p = data.product
       const nm = p.nutriments ?? {}
+      // Parse serving size string like "28 g" or "1 oz (28 g)"
+      const servingStr = p.serving_size as string | undefined
+      let servingSizeG: number | undefined
+      if (servingStr) {
+        const gMatch = servingStr.match(/(\d+\.?\d*)\s*g/i)
+        if (gMatch) servingSizeG = parseFloat(gMatch[1])
+        else {
+          const ozMatch = servingStr.match(/(\d+\.?\d*)\s*oz/i)
+          if (ozMatch) servingSizeG = parseFloat(ozMatch[1]) * 28.3495
+        }
+      }
       return NextResponse.json({
         fdcId: parseInt(code) || 0,
         description: (p.product_name as string) || (p.product_name_en as string) || 'Unknown product',
@@ -82,6 +101,7 @@ export async function GET(request: Request) {
         fat_g: nm['fat_100g'] ?? nm['fat'] ?? 0,
         fiber_g: nm['fiber_100g'] ?? nm['fiber'] ?? 0,
         sodium_mg: (nm['sodium_100g'] ?? nm['sodium'] ?? 0) * 1000,
+        servingSizeG,
       })
     } catch {
       continue

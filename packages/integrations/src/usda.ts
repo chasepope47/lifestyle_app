@@ -9,6 +9,8 @@ export interface UsdaFoodItem {
   brandOwner?: string
   ingredients?: string
   foodNutrients: UsdaNutrient[]
+  servingSize?: number
+  servingSizeUnit?: string
 }
 
 export interface UsdaNutrient {
@@ -28,6 +30,8 @@ export interface FoodSearchResult {
   fat_g: number
   fiber_g: number
   sodium_mg: number
+  /** Serving size in grams (normalized). Present for branded/packaged foods. */
+  servingSizeG?: number
 }
 
 // USDA nutrient IDs
@@ -44,6 +48,15 @@ function extractNutrient(nutrients: UsdaNutrient[], id: number): number {
   return nutrients.find(n => n.nutrientId === id)?.value ?? 0
 }
 
+function toServingSizeG(size: number | undefined, unit: string | undefined): number | undefined {
+  if (!size || !unit) return undefined
+  const u = unit.toLowerCase()
+  if (u === 'g' || u === 'gram' || u === 'grams') return size
+  if (u === 'oz' || u === 'ounce' || u === 'ounces') return size * 28.3495
+  if (u === 'ml' || u === 'milliliter' || u === 'milliliters') return size // 1ml ≈ 1g
+  return size // unknown unit — assume grams
+}
+
 function mapToSearchResult(item: UsdaFoodItem): FoodSearchResult {
   const n = item.foodNutrients
   return {
@@ -56,6 +69,7 @@ function mapToSearchResult(item: UsdaFoodItem): FoodSearchResult {
     fat_g: extractNutrient(n, NUTRIENT_IDS.fat),
     fiber_g: extractNutrient(n, NUTRIENT_IDS.fiber),
     sodium_mg: extractNutrient(n, NUTRIENT_IDS.sodium),
+    servingSizeG: toServingSizeG(item.servingSize, item.servingSizeUnit),
   }
 }
 
