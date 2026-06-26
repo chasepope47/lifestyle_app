@@ -89,7 +89,7 @@ export default function NutritionPage() {
       if (data.product) {
         const product = data.product
         const food: FoodSearchResult = {
-          fdcId: barcode,
+          fdcId: parseInt(barcode) || 0,
           description: product.product_name || 'Unknown product',
           brandOwner: product.brands || null,
           calories: product.nutriments?.['energy-kcal'] || 0,
