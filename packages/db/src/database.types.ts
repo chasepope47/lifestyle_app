@@ -284,6 +284,8 @@ export interface Database {
           is_recurring: boolean
           recurrence_rule: string | null
           notes: string | null
+          category: string | null
+          emotion: string | null
           created_at: string
         }
         Insert: {
@@ -299,6 +301,8 @@ export interface Database {
           is_recurring?: boolean
           recurrence_rule?: string | null
           notes?: string | null
+          category?: string | null
+          emotion?: string | null
           created_at?: string
         }
         Update: {
@@ -314,6 +318,8 @@ export interface Database {
           is_recurring?: boolean
           recurrence_rule?: string | null
           notes?: string | null
+          category?: string | null
+          emotion?: string | null
           created_at?: string
         }
         Relationships: []
