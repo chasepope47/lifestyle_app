@@ -153,6 +153,24 @@ export default function BudgetPage() {
     setShowAddAccount(true)
   }
 
+  const isExactDuplicate = async (accountId: string, amount: number, description: string, transactionDate: string): Promise<boolean> => {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('account_id', accountId)
+      .eq('amount', amount)
+      .eq('description', description)
+      .eq('transaction_date', transactionDate)
+      .limit(1)
+
+    if (error) {
+      console.error('Error checking duplicate:', error)
+      return false
+    }
+
+    return (data?.length ?? 0) > 0
+  }
+
   const uploadStatement = async () => {
     if (!statementFile || !editingAccount || !user) return
     try {
