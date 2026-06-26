@@ -160,15 +160,16 @@ export default function BudgetPage() {
       const { error } = await supabase.storage.from('bank_statements').upload(fileName, statementFile)
       if (error) throw error
 
-      const { error: dbError } = await supabase.from('bank_statements').insert({
-        account_id: editingAccount.id,
-        file_name: statementFile.name,
-        file_path: fileName,
-        statement_month: new Date(),
-        uploaded_by: user.id,
-        file_size: statementFile.size,
-      })
-      if (dbError) throw dbError
+      // TODO: Insert into bank_statements table once migrations are applied
+      // const { error: dbError } = await supabase.from('bank_statements').insert({
+      //   account_id: editingAccount.id,
+      //   file_name: statementFile.name,
+      //   file_path: fileName,
+      //   statement_month: new Date(),
+      //   uploaded_by: user.id,
+      //   file_size: statementFile.size,
+      // })
+      // if (dbError) throw dbError
 
       setStatementFile(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
