@@ -89,21 +89,37 @@ export default function BudgetPage() {
   }
 
   const updateTransactionCategory = async (txId: string, category: string, emotion?: string) => {
-    const { error } = await supabase.from('transactions').update({ category, emotion }).eq('id', txId)
-    if (error) {
-      console.error('Failed to update transaction:', error)
-      return
-    }
-    const newUnreviewed = unreviewed.filter(t => t.id !== txId)
-    setSwipeDirection(null)
-    setSwipeOffset({ x: 0, y: 0 })
-    setUnreviewed(newUnreviewed)
-    if (newUnreviewed.length > 0) {
-      if (reviewIndex >= newUnreviewed.length) {
-        setReviewIndex(newUnreviewed.length - 1)
+    console.log('Updating transaction:', { txId, category, currentIndex: reviewIndex, total: unreviewed.length })
+    try {
+      const { error } = await supabase.from('transactions').update({ category, emotion }).eq('id', txId)
+      if (error) {
+        console.error('Failed to update transaction:', error)
+        alert('Failed to save category. Please try again.')
+        return
       }
-    } else {
-      setView('dashboard')
+      console.log('Transaction updated successfully')
+
+      const newUnreviewed = unreviewed.filter(t => t.id !== txId)
+      console.log('Filtered unreviewed:', newUnreviewed.length)
+
+      setSwipeDirection(null)
+      setSwipeOffset({ x: 0, y: 0 })
+      setUnreviewed(newUnreviewed)
+
+      if (newUnreviewed.length > 0) {
+        if (reviewIndex >= newUnreviewed.length) {
+          console.log('Setting index to:', newUnreviewed.length - 1)
+          setReviewIndex(newUnreviewed.length - 1)
+        } else {
+          console.log('Keeping index at:', reviewIndex)
+        }
+      } else {
+        console.log('No more transactions, returning to dashboard')
+        setView('dashboard')
+      }
+    } catch (err) {
+      console.error('Error in updateTransactionCategory:', err)
+      alert('Error saving transaction. Please try again.')
     }
   }
 
