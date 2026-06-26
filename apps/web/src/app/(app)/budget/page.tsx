@@ -44,6 +44,7 @@ export default function BudgetPage() {
   const [showSwipeSettings, setShowSwipeSettings] = useState(false)
   const [swipeDirection, setSwipeDirection] = useState<SwipeDirection | null>(null)
   const [swipeOffset, setSwipeOffset] = useState({ x: 0, y: 0 })
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [showAddAccount, setShowAddAccount] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
   const [accountForm, setAccountForm] = useState<{ name: string; type: 'checking' | 'savings' | 'credit' | 'cash' | 'investment'; balance: string; currency: string }>({ name: '', type: 'checking', balance: '', currency: 'USD' })
@@ -122,6 +123,14 @@ export default function BudgetPage() {
       console.error('Error in updateTransactionCategory:', err)
       alert('Error saving transaction. Please try again.')
     }
+  }
+
+  const changeTransactionCategory = async (txId: string, category: string) => {
+    const { error } = await supabase.from('transactions').update({ category }).eq('id', txId)
+    if (error) { console.error('Failed to update category:', error); return }
+    setTransactions(prev => prev.map(t => t.id === txId ? { ...t, category } : t))
+    setUnreviewed(prev => prev.filter(t => t.id !== txId))
+    setMenuOpenId(null)
   }
 
   const saveAccount = async () => {
@@ -597,6 +606,9 @@ export default function BudgetPage() {
           )}
         </div>
 
+        {menuOpenId && (
+          <div className="fixed inset-0 z-10" onClick={() => setMenuOpenId(null)} />
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {monthTransactions.slice(0, 12).map(tx => {
             const catColor = tx.category ? CATEGORY_COLORS[tx.category as keyof typeof CATEGORY_COLORS] : { bg: 'bg-stone-700', light: 'bg-stone-700/20', text: 'text-stone-400' }
@@ -606,9 +618,30 @@ export default function BudgetPage() {
                   <div className={`w-10 h-10 rounded-lg ${catColor.bg} flex-shrink-0 flex items-center justify-center text-white font-bold text-sm`}>
                     {(tx.description || 'TX').substring(0, 2).toUpperCase()}
                   </div>
-                  <button className="p-1 hover:bg-stone-700/50 rounded flex-shrink-0 ml-2">
-                    <MoreHorizontal className="w-4 h-4 text-stone-500" />
-                  </button>
+                  <div className="relative flex-shrink-0 ml-2">
+                    <button
+                      onClick={() => setMenuOpenId(menuOpenId === tx.id ? null : tx.id)}
+                      className="p-1 hover:bg-stone-700/50 rounded"
+                    >
+                      <MoreHorizontal className="w-4 h-4 text-stone-500" />
+                    </button>
+                    {menuOpenId === tx.id && (
+                      <div className="absolute right-0 top-7 z-20 bg-stone-800 border border-stone-600 rounded-xl shadow-xl p-1.5 min-w-[148px]">
+                        <p className="text-xs text-stone-500 px-2 py-1 mb-0.5">Set category</p>
+                        {(['needs', 'wants', 'savings', 'transfers'] as const).map(cat => (
+                          <button
+                            key={cat}
+                            onClick={() => changeTransactionCategory(tx.id, cat)}
+                            className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors ${tx.category === cat ? 'text-white bg-stone-700' : 'text-stone-300 hover:bg-stone-700'}`}
+                          >
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${CATEGORY_COLORS[cat].bg}`} />
+                            <span className="capitalize">{cat}</span>
+                            {tx.category === cat && <span className="ml-auto text-stone-400 text-xs">✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <p className="text-sm font-medium text-stone-50 mb-1 truncate">{tx.description}</p>
                 <p className="text-xl sm:text-2xl font-bold text-white mb-2">{formatCurrency(Math.abs(tx.amount))}</p>
