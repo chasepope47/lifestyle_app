@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { Plus, ChevronDown, ChevronLeft, ChevronRight, Meh, Frown, Smile, MoreHorizontal, ArrowLeft } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { Plus, ChevronDown, ChevronLeft, ChevronRight, Meh, Frown, Smile, MoreHorizontal, ArrowLeft, Settings } from 'lucide-react'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@lifestyle/shared'
@@ -8,6 +8,8 @@ import type { Database } from '@lifestyle/db'
 
 type Account = Database['public']['Tables']['budget_accounts']['Row']
 type Transaction = Database['public']['Tables']['transactions']['Row']
+type SwipeDirection = 'up' | 'down' | 'left' | 'right'
+type SwipeConfig = Record<SwipeDirection, string>
 
 const CATEGORY_COLORS = {
   needs: { bg: 'bg-blue-500', light: 'bg-blue-500/20', text: 'text-blue-400' },
@@ -30,6 +32,15 @@ export default function BudgetPage() {
   const [loading, setLoading] = useState(true)
   const [reviewIndex, setReviewIndex] = useState(0)
   const [unreviewed, setUnreviewed] = useState<Transaction[]>([])
+  const [swipeConfig, setSwipeConfig] = useState<SwipeConfig>({
+    up: 'needs',
+    down: 'savings',
+    left: 'wants',
+    right: '',
+  })
+  const [showSwipeSettings, setShowSwipeSettings] = useState(false)
+  const [swipeDirection, setSwipeDirection] = useState<SwipeDirection | null>(null)
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     if (!householdId) return
@@ -77,18 +88,53 @@ export default function BudgetPage() {
     }
   }
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    setSwipeDirection(null)
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return
+    const endX = e.changedTouches[0].clientX
+    const endY = e.changedTouches[0].clientY
+    const diffX = endX - touchStartRef.current.x
+    const diffY = endY - touchStartRef.current.y
+    const minSwipeDistance = 50
+
+    if (Math.abs(diffX) < minSwipeDistance && Math.abs(diffY) < minSwipeDistance) return
+
+    let direction: SwipeDirection | null = null
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      direction = diffX > 0 ? 'right' : 'left'
+    } else {
+      direction = diffY > 0 ? 'down' : 'up'
+    }
+
+    if (direction && swipeConfig[direction]) {
+      setSwipeDirection(direction)
+      setTimeout(() => {
+        if (view === 'review' && unreviewed.length > reviewIndex) {
+          const current = unreviewed[reviewIndex]
+          updateTransactionCategory(current.id, swipeConfig[direction])
+        }
+      }, 200)
+    }
+  }
+
   if (loading) return <div className="p-8 text-stone-400">Loading…</div>
 
   if (view === 'review' && unreviewed.length > 0) {
     const current = unreviewed[reviewIndex]
     return (
-      <div className="px-4 py-8 max-w-2xl mx-auto">
+      <div className="px-4 py-8 max-w-2xl mx-auto pb-20">
         <div className="flex items-center justify-between mb-8">
           <button onClick={() => setView('dashboard')} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg">
             <ArrowLeft className="w-5 h-5 text-stone-600 dark:text-stone-400" />
           </button>
           <h1 className="text-xl font-bold text-stone-900 dark:text-stone-50">Review Transactions</h1>
-          <div className="w-10" />
+          <button onClick={() => setShowSwipeSettings(true)} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg">
+            <Settings className="w-5 h-5 text-stone-600 dark:text-stone-400" />
+          </button>
         </div>
 
         <div className="text-center mb-8">
@@ -97,7 +143,15 @@ export default function BudgetPage() {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-stone-700 dark:border-stone-700 bg-stone-900/50 dark:bg-stone-800/50 p-6 mb-6">
+        {/* Swipeable transaction card */}
+        <div
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          className={`rounded-2xl border border-stone-700 dark:border-stone-700 bg-stone-900/50 dark:bg-stone-800/50 p-6 mb-8 transition-all ${
+            swipeDirection === 'up' ? 'scale-95 opacity-70' : swipeDirection === 'down' ? 'scale-95 opacity-70' :
+            swipeDirection === 'left' ? 'translate-x-12 opacity-70' : swipeDirection === 'right' ? '-translate-x-12 opacity-70' : ''
+          } cursor-grab active:cursor-grabbing`}
+        >
           <div className="flex gap-4 mb-6">
             <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
               {(current.description || 'TX').substring(0, 2).toUpperCase()}
@@ -108,42 +162,30 @@ export default function BudgetPage() {
             </div>
           </div>
 
-          <div className="flex gap-2 justify-center mb-6">
-            <button
-              onClick={() => updateTransactionCategory(current.id, '', 'sad')}
-              className="flex flex-col items-center gap-2 p-3 hover:bg-stone-700 rounded-lg transition-colors"
-            >
-              <Frown className="w-6 h-6 text-red-400" />
-              <span className="text-xs text-stone-400">Regret</span>
-            </button>
-            <button
-              onClick={() => updateTransactionCategory(current.id, '', 'neutral')}
-              className="flex flex-col items-center gap-2 p-3 hover:bg-stone-700 rounded-lg transition-colors"
-            >
-              <Meh className="w-6 h-6 text-yellow-400" />
-              <span className="text-xs text-stone-400">Neutral</span>
-            </button>
-            <button
-              onClick={() => updateTransactionCategory(current.id, '', 'happy')}
-              className="flex flex-col items-center gap-2 p-3 hover:bg-stone-700 rounded-lg transition-colors"
-            >
-              <Smile className="w-6 h-6 text-green-400" />
-              <span className="text-xs text-stone-400">Happy</span>
-            </button>
-          </div>
+          <p className="text-center text-sm text-stone-400 mb-4">Swipe to categorize</p>
 
-          <select
-            onChange={(e) => updateTransactionCategory(current.id, e.target.value)}
-            className="w-full rounded-lg border border-stone-600 dark:border-stone-700 bg-stone-800 dark:bg-stone-900 px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select category…</option>
-            <option value="needs">Needs</option>
-            <option value="wants">Wants</option>
-            <option value="savings">Savings</option>
-          </select>
+          {/* Swipe guides */}
+          <div className="grid grid-cols-4 gap-2 text-xs text-center">
+            <div className="p-3 rounded-lg bg-stone-700/50">
+              <div className="text-lg mb-1">⬆️</div>
+              <div className="font-medium text-stone-300">{swipeConfig.up || 'Not set'}</div>
+            </div>
+            <div className="p-3 rounded-lg bg-stone-700/50">
+              <div className="text-lg mb-1">⬅️</div>
+              <div className="font-medium text-stone-300">{swipeConfig.left || 'Not set'}</div>
+            </div>
+            <div className="p-3 rounded-lg bg-stone-700/50">
+              <div className="text-lg mb-1">➡️</div>
+              <div className="font-medium text-stone-300">{swipeConfig.right || 'Not set'}</div>
+            </div>
+            <div className="p-3 rounded-lg bg-stone-700/50">
+              <div className="text-lg mb-1">⬇️</div>
+              <div className="font-medium text-stone-300">{swipeConfig.down || 'Not set'}</div>
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => setReviewIndex(Math.max(0, reviewIndex - 1))}
             disabled={reviewIndex === 0}
@@ -161,6 +203,42 @@ export default function BudgetPage() {
             Skip <ChevronRight className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Swipe Settings Modal */}
+        {showSwipeSettings && (
+          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+            <div className="bg-stone-900 rounded-2xl p-6 w-full max-w-sm">
+              <h2 className="text-lg font-semibold text-stone-50 mb-6">Configure Swipe Gestures</h2>
+
+              <div className="space-y-4">
+                {(['up', 'down', 'left', 'right'] as SwipeDirection[]).map(dir => (
+                  <div key={dir}>
+                    <label className="block text-sm font-medium text-stone-300 mb-2">
+                      {dir === 'up' ? '⬆️ Swipe Up' : dir === 'down' ? '⬇️ Swipe Down' : dir === 'left' ? '⬅️ Swipe Left' : '➡️ Swipe Right'}
+                    </label>
+                    <select
+                      value={swipeConfig[dir]}
+                      onChange={(e) => setSwipeConfig(p => ({ ...p, [dir]: e.target.value }))}
+                      className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-2.5 text-stone-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Not assigned</option>
+                      <option value="needs">Needs</option>
+                      <option value="wants">Wants</option>
+                      <option value="savings">Savings</option>
+                    </select>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setShowSwipeSettings(false)}
+                className="w-full mt-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
