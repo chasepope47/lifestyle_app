@@ -46,7 +46,7 @@ export default function BudgetPage() {
   const [swipeOffset, setSwipeOffset] = useState({ x: 0, y: 0 })
   const [showAddAccount, setShowAddAccount] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
-  const [accountForm, setAccountForm] = useState({ name: '', type: 'checking' as const, balance: '', currency: 'USD' })
+  const [accountForm, setAccountForm] = useState<{ name: string; type: 'checking' | 'savings' | 'credit' | 'cash' | 'investment'; balance: string; currency: string }>({ name: '', type: 'checking', balance: '', currency: 'USD' })
   const [statementFile, setStatementFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
@@ -113,7 +113,7 @@ export default function BudgetPage() {
       if (editingAccount) {
         await supabase.from('budget_accounts').update({
           name: accountForm.name,
-          type: accountForm.type as 'checking' | 'savings' | 'credit' | 'cash' | 'investment',
+          type: accountForm.type,
           balance: parseFloat(accountForm.balance),
           currency: accountForm.currency,
         }).eq('id', editingAccount.id)
@@ -121,7 +121,7 @@ export default function BudgetPage() {
         await supabase.from('budget_accounts').insert({
           household_id: householdId,
           name: accountForm.name,
-          type: accountForm.type as 'checking' | 'savings' | 'credit' | 'cash' | 'investment',
+          type: accountForm.type,
           balance: parseFloat(accountForm.balance),
           currency: accountForm.currency,
           created_by: user.id,
@@ -135,7 +135,7 @@ export default function BudgetPage() {
       })
       setShowAddAccount(false)
       setEditingAccount(null)
-      setAccountForm({ name: '', type: 'checking' as const, balance: '', currency: 'USD' })
+      setAccountForm({ name: '', type: 'checking', balance: '', currency: 'USD' })
     } catch (err) {
       console.error('Error saving account:', err)
     }
@@ -494,7 +494,7 @@ export default function BudgetPage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-stone-50">Accounts</h3>
-          <button onClick={() => { setShowAddAccount(true); setEditingAccount(null); setAccountForm({ name: '', type: 'checking' as const, balance: '', currency: 'USD' }); }} className="flex items-center gap-2 px-3 py-1 text-blue-400 hover:text-blue-300 text-sm font-medium">
+          <button onClick={() => { setShowAddAccount(true); setEditingAccount(null); setAccountForm({ name: '', type: 'checking', balance: '', currency: 'USD' }); }} className="flex items-center gap-2 px-3 py-1 text-blue-400 hover:text-blue-300 text-sm font-medium">
             <Plus className="w-4 h-4" /> Add
           </button>
         </div>
