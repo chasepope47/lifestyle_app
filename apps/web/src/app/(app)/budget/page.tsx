@@ -544,7 +544,7 @@ export default function BudgetPage() {
                 <label className="block text-sm font-medium text-stone-300 mb-2">Type</label>
                 <select
                   value={accountForm.type}
-                  onChange={e => setAccountForm(p => ({ ...p, type: e.target.value }))}
+                  onChange={e => setAccountForm(p => ({ ...p, type: e.target.value as 'checking' | 'savings' | 'credit' | 'cash' | 'investment' }))}
                   className="w-full px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-800 text-stone-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="checking">Checking</option>
