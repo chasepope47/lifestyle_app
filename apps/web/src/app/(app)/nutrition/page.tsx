@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { Plus, Search, Barcode, X, ChevronLeft, ChevronRight, Trash2, CalendarDays } from 'lucide-react'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
@@ -211,6 +211,12 @@ export default function NutritionPage() {
   const [barcodeInput, setBarcodeInput] = useState('')
   const [barcodeSearching, setBarcodeSearching] = useState(false)
   const [expandedMeals, setExpandedMeals] = useState<Set<string>>(new Set(MEAL_ORDER))
+  const [cameraActive, setCameraActive] = useState(false)
+  const [cameraError, setCameraError] = useState<string | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const scanningRef = useRef(false)
+  const detectorRef = useRef<any>(null)
   const [showCalendar, setShowCalendar] = useState(false)
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const d = new Date()
@@ -256,6 +262,67 @@ export default function NutritionPage() {
 
   const isToday = viewDate === todayISO()
   const displayDate = new Date(viewDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+
+  const stopCamera = useCallback(() => {
+    scanningRef.current = false
+    streamRef.current?.getTracks().forEach(t => t.stop())
+    streamRef.current = null
+    if (videoRef.current) videoRef.current.srcObject = null
+    setCameraActive(false)
+  }, [])
+
+  const scanLoop = useCallback(async () => {
+    if (!scanningRef.current || !videoRef.current) return
+    if (videoRef.current.readyState < 2) {
+      requestAnimationFrame(scanLoop)
+      return
+    }
+    try {
+      const barcodes = await detectorRef.current.detect(videoRef.current)
+      if (barcodes.length > 0) {
+        stopCamera()
+        setBarcodeInput(barcodes[0].rawValue)
+        return
+      }
+    } catch {}
+    if (scanningRef.current) requestAnimationFrame(scanLoop)
+  }, [stopCamera])
+
+  const startCamera = useCallback(async () => {
+    setCameraError(null)
+    if (!('BarcodeDetector' in window)) {
+      setCameraError('Live scanning not supported in this browser — type the barcode manually below.')
+      return
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 } },
+      })
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        await videoRef.current.play()
+      }
+      detectorRef.current = new (window as any).BarcodeDetector({
+        formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code'],
+      })
+      scanningRef.current = true
+      setCameraActive(true)
+      requestAnimationFrame(scanLoop)
+    } catch {
+      setCameraError('Camera access denied. Check permissions or type the barcode below.')
+    }
+  }, [scanLoop])
+
+  useEffect(() => {
+    if (showBarcode) {
+      startCamera()
+    } else {
+      stopCamera()
+      setBarcodeInput('')
+    }
+    return () => { stopCamera() }
+  }, [showBarcode, startCamera, stopCamera])
 
   const totals = {
     calories: entries.reduce((s, e) => s + e.calories, 0),
@@ -552,7 +619,7 @@ export default function NutritionPage() {
           <div className="bg-stone-900 rounded-2xl p-6 w-full max-w-md max-h-[90vh] flex flex-col border border-stone-700">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-stone-50">Log food</h3>
-              <button onClick={() => { setShowAdd(false); setResults([]); setQuery(''); setShowBarcode(false) }} className="p-1 hover:bg-stone-800 rounded">
+              <button onClick={() => { setShowAdd(false); setResults([]); setQuery(''); setShowBarcode(false); stopCamera() }} className="p-1 hover:bg-stone-800 rounded">
                 <X className="w-5 h-5 text-stone-400" />
               </button>
             </div>
@@ -570,22 +637,68 @@ export default function NutritionPage() {
             </div>
 
             {showBarcode ? (
-              <div className="mb-4">
-                <div className="flex gap-2 mb-3">
+              <div className="mb-4 space-y-3">
+                {/* Camera view */}
+                <div className="relative rounded-xl overflow-hidden bg-black aspect-video">
+                  <video
+                    ref={videoRef}
+                    className="w-full h-full object-cover"
+                    playsInline
+                    muted
+                  />
+                  {cameraActive && (
+                    <>
+                      {/* Scanning frame overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="relative w-56 h-28">
+                          <span className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-emerald-400 rounded-tl" />
+                          <span className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-emerald-400 rounded-tr" />
+                          <span className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-emerald-400 rounded-bl" />
+                          <span className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-emerald-400 rounded-br" />
+                          {/* Scanning line */}
+                          <div className="absolute inset-x-0 top-1/2 h-0.5 bg-emerald-400/60 animate-pulse" />
+                        </div>
+                      </div>
+                      <p className="absolute bottom-2 inset-x-0 text-center text-xs text-white/70">
+                        Point camera at barcode
+                      </p>
+                    </>
+                  )}
+                  {!cameraActive && !cameraError && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                  {cameraError && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                      <p className="text-xs text-red-400 mb-3">{cameraError}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Scanned / manual input */}
+                <div className="flex gap-2">
                   <input
                     value={barcodeInput}
                     onChange={e => setBarcodeInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && searchByBarcode(barcodeInput)}
-                    placeholder="Enter or scan barcode…"
-                    autoFocus
-                    className="flex-1 px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-800 text-stone-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder={cameraActive ? 'Barcode will appear here…' : 'Type barcode manually…'}
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-800 text-stone-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
-                  <button onClick={() => setShowBarcode(false)} className="px-4 py-2 rounded-xl bg-stone-700 text-stone-300 text-sm font-medium">
-                    Back
+                  <button
+                    onClick={() => searchByBarcode(barcodeInput)}
+                    disabled={barcodeSearching || !barcodeInput.trim()}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium disabled:opacity-40 hover:bg-emerald-700 transition-colors"
+                  >
+                    {barcodeSearching ? '…' : 'Search'}
                   </button>
                 </div>
-                <button onClick={() => searchByBarcode(barcodeInput)} disabled={barcodeSearching} className="w-full py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium disabled:opacity-50">
-                  {barcodeSearching ? 'Searching…' : 'Search'}
+
+                <button
+                  onClick={() => setShowBarcode(false)}
+                  className="w-full py-2 rounded-xl bg-stone-800 text-stone-400 text-sm hover:bg-stone-700 transition-colors"
+                >
+                  ← Back to search
                 </button>
               </div>
             ) : (
