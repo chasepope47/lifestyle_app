@@ -214,6 +214,7 @@ export default function NutritionPage() {
   const [expandedMeals, setExpandedMeals] = useState<Set<string>>(new Set(MEAL_ORDER))
   const [cameraActive, setCameraActive] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
+  const [barcodeError, setBarcodeError] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [showCalendar, setShowCalendar] = useState(false)
   const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -267,30 +268,32 @@ export default function NutritionPage() {
   const searchByBarcode = useCallback(async (barcode: string) => {
     if (!barcode.trim()) return
     setBarcodeSearching(true)
+    setBarcodeError(null)
+    setResults([])
     try {
       const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`)
-      if (!res.ok) throw new Error('Product not found')
       const data = await res.json()
-      if (data.product) {
+      if (data.status === 1 && data.product) {
         const product = data.product
         const food: FoodSearchResult = {
           fdcId: parseInt(barcode) || 0,
-          description: product.product_name || 'Unknown product',
+          description: product.product_name || product.product_name_en || 'Unknown product',
           brandOwner: product.brands || null,
-          calories: product.nutriments?.['energy-kcal'] || 0,
-          protein_g: product.nutriments?.proteins || 0,
-          carbs_g: product.nutriments?.carbohydrates || 0,
-          fat_g: product.nutriments?.fat || 0,
-          fiber_g: product.nutriments?.fiber || 0,
-          sodium_mg: (product.nutriments?.salt || 0) * 1000,
+          calories: product.nutriments?.['energy-kcal_100g'] ?? product.nutriments?.['energy-kcal'] ?? 0,
+          protein_g: product.nutriments?.['proteins_100g'] ?? product.nutriments?.proteins ?? 0,
+          carbs_g: product.nutriments?.['carbohydrates_100g'] ?? product.nutriments?.carbohydrates ?? 0,
+          fat_g: product.nutriments?.['fat_100g'] ?? product.nutriments?.fat ?? 0,
+          fiber_g: product.nutriments?.['fiber_100g'] ?? product.nutriments?.fiber ?? 0,
+          sodium_mg: (product.nutriments?.['sodium_100g'] ?? product.nutriments?.sodium ?? 0) * 1000,
         }
         setResults([food])
-        setBarcodeInput('')
+        // Close camera view so the result is front-and-center
+        setShowBarcode(false)
       } else {
-        alert('Product not found in barcode database. Try searching by name.')
+        setBarcodeError('Product not found. Try searching by name below.')
       }
     } catch {
-      alert('Error looking up barcode. Try searching by name instead.')
+      setBarcodeError('Could not reach barcode database. Check your connection.')
     } finally {
       setBarcodeSearching(false)
     }
@@ -315,8 +318,9 @@ export default function NutritionPage() {
             controls.stop()
             controlsRef.current = null
             setCameraActive(false)
-            setShowBarcode(false)
-            searchByBarcode(result.getText())
+            const code = result.getText()
+            setBarcodeInput(code)
+            searchByBarcode(code)
           }
         }
       )
@@ -329,10 +333,13 @@ export default function NutritionPage() {
 
   useEffect(() => {
     if (showBarcode) {
+      setBarcodeError(null)
+      setResults([])
       startCamera()
     } else {
       stopCamera()
       setBarcodeInput('')
+      setBarcodeError(null)
     }
     return () => { stopCamera() }
   }, [showBarcode, startCamera, stopCamera])
@@ -657,13 +664,27 @@ export default function NutritionPage() {
                   )}
                 </div>
 
+                {/* Status: searching / found / error */}
+                {barcodeSearching && (
+                  <div className="flex items-center justify-center gap-2 py-2 text-sm text-emerald-400">
+                    <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                    Searching for product…
+                  </div>
+                )}
+                {barcodeError && !barcodeSearching && (
+                  <p className="text-xs text-red-400 text-center py-1">{barcodeError}</p>
+                )}
+                {!barcodeSearching && !barcodeError && results.length > 0 && (
+                  <p className="text-xs text-emerald-400 text-center py-1">Product found — tap below to log it</p>
+                )}
+
                 {/* Scanned / manual input */}
                 <div className="flex gap-2">
                   <input
                     value={barcodeInput}
-                    onChange={e => setBarcodeInput(e.target.value)}
+                    onChange={e => { setBarcodeInput(e.target.value); setBarcodeError(null) }}
                     onKeyDown={e => e.key === 'Enter' && searchByBarcode(barcodeInput)}
-                    placeholder={cameraActive ? 'Barcode will appear here…' : 'Type barcode manually…'}
+                    placeholder={cameraActive ? 'Aim camera at barcode…' : 'Type barcode manually…'}
                     className="flex-1 px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-800 text-stone-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                   <button
@@ -679,7 +700,7 @@ export default function NutritionPage() {
                   onClick={() => setShowBarcode(false)}
                   className="w-full py-2 rounded-xl bg-stone-800 text-stone-400 text-sm hover:bg-stone-700 transition-colors"
                 >
-                  ← Back to search
+                  ← Back to name search
                 </button>
               </div>
             ) : (

@@ -118,11 +118,14 @@ function LoginPageContent() {
       router.push(params.get('redirectTo') ?? '/dashboard')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
-      if (!msg.toLowerCase().includes('cancel') && !msg.toLowerCase().includes('abort')) {
+      const isCancelled = msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('abort')
+      if (isCancelled) {
+        // User dismissed the biometric prompt — go to dashboard without complaint
+        router.push(params.get('redirectTo') ?? '/dashboard')
+      } else {
+        // Real error — stay on the prompt page so the user can read it and retry
         setError(msg)
       }
-      // Still redirect even if passkey registration fails/is cancelled
-      router.push(params.get('redirectTo') ?? '/dashboard')
     } finally {
       setRegisteringPasskey(false)
     }
