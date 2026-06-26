@@ -215,10 +215,6 @@ export default function BudgetPage() {
   const uploadStatement = async () => {
     if (!statementFile || !editingAccount || !user || !householdId) return
     try {
-      const fileName = `${editingAccount.id}/${Date.now()}-${statementFile.name}`
-      const { error } = await supabase.storage.from('bank_statements').upload(fileName, statementFile)
-      if (error) throw error
-
       let importCount = 0
       if (statementFile.name.endsWith('.csv')) {
         const newTransactions = await parseCSVTransactions(statementFile, editingAccount.id)
@@ -232,16 +228,16 @@ export default function BudgetPage() {
           if (insertError) throw insertError
           importCount = newTransactions.length
         }
-        alert(`Bank statement imported!\n${importCount} new transactions added.`)
+        alert(`✓ Bank statement imported!\n${importCount} new transactions added.`)
       } else {
-        alert('Bank statement uploaded successfully! (CSV import adds transactions automatically)')
+        alert('Please upload a CSV file to import transactions')
       }
 
       setStatementFile(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (err) {
-      console.error('Error uploading statement:', err)
-      alert(`Failed to upload bank statement: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      console.error('Error importing statement:', err)
+      alert(`Failed to import bank statement: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 
