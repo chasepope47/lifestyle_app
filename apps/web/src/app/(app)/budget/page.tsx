@@ -81,11 +81,17 @@ export default function BudgetPage() {
   }
 
   const updateTransactionCategory = async (txId: string, category: string, emotion?: string) => {
-    await supabase.from('transactions').update({ category, emotion }).eq('id', txId)
+    const { error } = await supabase.from('transactions').update({ category, emotion }).eq('id', txId)
+    if (error) {
+      console.error('Failed to update transaction:', error)
+      return
+    }
     const newUnreviewed = unreviewed.filter(t => t.id !== txId)
     setUnreviewed(newUnreviewed)
-    if (reviewIndex < newUnreviewed.length) {
-      setReviewIndex(reviewIndex + 1)
+    if (newUnreviewed.length > 0) {
+      if (reviewIndex >= newUnreviewed.length) {
+        setReviewIndex(newUnreviewed.length - 1)
+      }
     } else {
       setView('dashboard')
     }
