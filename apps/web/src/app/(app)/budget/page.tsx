@@ -203,10 +203,8 @@ export default function BudgetPage() {
           amount,
           description,
           transaction_date: date,
-          household_id: householdId,
-          user_id: user?.id,
-          merchant: cols[headers.findIndex(h => h === 'Extended Description')] || '',
-          notes: cols[headers.findIndex(h => h === 'Transaction Category')] || '',
+          merchant: cols[headers.findIndex(h => h === 'Extended Description')] || undefined,
+          notes: cols[headers.findIndex(h => h === 'Transaction Category')] || undefined,
         })
       }
     }
@@ -224,8 +222,13 @@ export default function BudgetPage() {
       let importCount = 0
       if (statementFile.name.endsWith('.csv')) {
         const newTransactions = await parseCSVTransactions(statementFile, editingAccount.id)
-        if (newTransactions.length > 0) {
-          const { error: insertError } = await supabase.from('transactions').insert(newTransactions)
+        if (newTransactions.length > 0 && householdId && user?.id) {
+          const validTransactions = newTransactions.map(t => ({
+            ...t,
+            household_id: householdId,
+            user_id: user.id,
+          }))
+          const { error: insertError } = await supabase.from('transactions').insert(validTransactions)
           if (insertError) throw insertError
           importCount = newTransactions.length
         }
