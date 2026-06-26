@@ -41,6 +41,7 @@ export default function BudgetPage() {
   })
   const [showSwipeSettings, setShowSwipeSettings] = useState(false)
   const [swipeDirection, setSwipeDirection] = useState<SwipeDirection | null>(null)
+  const [swipeOffset, setSwipeOffset] = useState({ x: 0, y: 0 })
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
@@ -100,6 +101,16 @@ export default function BudgetPage() {
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
     setSwipeDirection(null)
+    setSwipeOffset({ x: 0, y: 0 })
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return
+    const currentX = e.touches[0].clientX
+    const currentY = e.touches[0].clientY
+    const diffX = currentX - touchStartRef.current.x
+    const diffY = currentY - touchStartRef.current.y
+    setSwipeOffset({ x: diffX, y: diffY })
   }
 
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -109,6 +120,8 @@ export default function BudgetPage() {
     const diffX = endX - touchStartRef.current.x
     const diffY = endY - touchStartRef.current.y
     const minSwipeDistance = 50
+
+    setSwipeOffset({ x: 0, y: 0 })
 
     if (Math.abs(diffX) < minSwipeDistance && Math.abs(diffY) < minSwipeDistance) return
 
@@ -156,11 +169,17 @@ export default function BudgetPage() {
         {/* Swipeable transaction card */}
         <div
           onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          className={`rounded-2xl border border-stone-700 dark:border-stone-700 bg-stone-900/50 dark:bg-stone-800/50 p-4 sm:p-6 mb-8 transition-all ${
-            swipeDirection === 'up' ? 'scale-95 opacity-70' : swipeDirection === 'down' ? 'scale-95 opacity-70' :
-            swipeDirection === 'left' ? 'translate-x-12 opacity-70' : swipeDirection === 'right' ? '-translate-x-12 opacity-70' : ''
+          className={`rounded-2xl border border-stone-700 dark:border-stone-700 bg-stone-900/50 dark:bg-stone-800/50 p-4 sm:p-6 mb-8 ${
+            swipeDirection ? 'transition-all' : ''
           } cursor-grab active:cursor-grabbing touch-none`}
+          style={{
+            transform: swipeDirection
+              ? (swipeDirection === 'up' ? 'scale(0.95)' : swipeDirection === 'down' ? 'scale(0.95)' :
+                 swipeDirection === 'left' ? 'translateX(48px)' : 'translateX(-48px)') + ' opacity(0.7)'
+              : `translateX(${swipeOffset.x * 0.5}px) translateY(${swipeOffset.y * 0.5}px)`
+          }}
         >
           <div className="flex gap-3 sm:gap-4 mb-6">
             <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex-shrink-0 flex items-center justify-center text-white font-bold text-sm sm:text-lg">
