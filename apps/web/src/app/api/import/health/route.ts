@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import JSZip from 'jszip'
-import { xml2js } from 'xml-js'
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
 
@@ -45,30 +44,25 @@ export async function POST(request: NextRequest) {
 
 async function parseAppleHealth(file: File, supabase: any, householdId: string, userId: string) {
   const text = await file.text()
-  const data = xml2js(text, { compact: true })
-
-  const results = []
-  const healthData = data.HealthData?.Record
-
-  if (!healthData) {
-    return [{ success: false, message: 'No health records found in export' }]
-  }
-
-  const records = Array.isArray(healthData) ? healthData : [healthData]
   const metricsMap = new Map()
 
-  for (const record of records) {
-    const type = record._attributes?.type
-    const date = record._attributes?.startDate?.split(' ')[0]
-    const value = record._attributes?.value
+  // Simple regex-based parsing for Apple Health XML
+  // Match <Record type="..." startDate="..." endDate="..." value="..." .../>
+  const recordRegex = /<Record[^>]*type="([^"]*)"[^>]*startDate="([^"]*)"[^>]*value="([^"]*)"[^>]*\/>/g
+  let match
 
-    if (!date || !type || !value) continue
+  while ((match = recordRegex.exec(text)) !== null) {
+    const type = match[1]
+    const startDate = match[2].split(' ')[0] // Extract date from "2024-06-25 10:30:00 +0000"
+    const value = match[3]
 
-    if (!metricsMap.has(date)) {
-      metricsMap.set(date, {})
+    if (!startDate || !type || !value) continue
+
+    if (!metricsMap.has(startDate)) {
+      metricsMap.set(startDate, {})
     }
 
-    const metrics = metricsMap.get(date)
+    const metrics = metricsMap.get(startDate)
 
     switch (type) {
       case 'HKQuantityTypeIdentifierStepCount':
@@ -82,7 +76,6 @@ async function parseAppleHealth(file: File, supabase: any, householdId: string, 
         if (!metrics.heart_rate_avg) metrics.heart_rate_avg = Math.round(parseFloat(value))
         break
       case 'HKCategoryTypeIdentifierSleepAnalysis':
-        // Sleep is more complex, approximate 8 hours for now
         if (!metrics.sleep_hours) metrics.sleep_hours = 8
         break
     }
@@ -108,13 +101,13 @@ async function parseAppleHealth(file: File, supabase: any, householdId: string, 
       .upsert(metricsToInsert, { onConflict: 'user_id,source,metric_date' })
 
     if (error) {
-      results.push({ success: false, message: `Failed to import health metrics: ${error.message}` })
+      return [{ success: false, message: `Failed to import health metrics: ${error.message}` }]
     } else {
-      results.push({ success: true, message: 'Health metrics imported', count: metricsToInsert.length, type: 'metric days' })
+      return [{ success: true, message: 'Health metrics imported', count: metricsToInsert.length, type: 'metric days' }]
     }
   }
 
-  return results
+  return [{ success: true, message: 'No health data found in export' }]
 }
 
 async function parseGarmin(file: File, supabase: any, householdId: string, userId: string) {
@@ -185,22 +178,31 @@ async function parseGarmin(file: File, supabase: any, householdId: string, userI
 
 function parseTCXorGPX(content: string, filename: string) {
   try {
-    const data = xml2js(content, { compact: true })
-    const activity = data.TrainingCenterDatabase?.Activities?.Activity || data.gpx?.trk
+    // Extract start time from <Activity startTime="2024-06-25T10:30:00Z" or <time>2024-06-25T10:30:00Z</time>
+    let startTime: string | null = null
+    const timeMatch = content.match(/<time>([^<]+)<\/time>/) || content.match(/startTime="([^"]+)"/)
+    if (timeMatch) startTime = timeMatch[1]
 
-    if (!activity) return null
+    if (!startTime) return null
 
-    const startTime = activity.Id || activity.time?._text
-    const laps = Array.isArray(activity.Lap) ? activity.Lap : [activity.Lap]
-
+    // Extract total distance (in meters) and duration (in seconds)
     let totalDistance = 0
     let totalDuration = 0
 
-    if (laps) {
-      for (const lap of laps) {
-        const distance = parseFloat(lap.DistanceMeters?._text || '0')
-        const duration = parseFloat(lap.TotalTimeSeconds?._text || '0')
+    // TCX format: <DistanceMeters>1234.56</DistanceMeters>
+    const distanceMatches = content.match(/<DistanceMeters>([^<]+)<\/DistanceMeters>/g)
+    if (distanceMatches) {
+      for (const match of distanceMatches) {
+        const distance = parseFloat(match.replace(/<\/?DistanceMeters>/g, ''))
         totalDistance += distance
+      }
+    }
+
+    // TCX format: <TotalTimeSeconds>3600</TotalTimeSeconds>
+    const durationMatches = content.match(/<TotalTimeSeconds>([^<]+)<\/TotalTimeSeconds>/g)
+    if (durationMatches) {
+      for (const match of durationMatches) {
+        const duration = parseFloat(match.replace(/<\/?TotalTimeSeconds>/g, ''))
         totalDuration += duration
       }
     }

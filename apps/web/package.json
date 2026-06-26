@@ -25,7 +25,6 @@
     "react-hook-form": "^7.80.0",
     "recharts": "^3.9.0",
     "tailwind-merge": "^3.6.0",
-    "xml-js": "^1.6.11",
     "zod": "^4.4.3"
   },
   "devDependencies": {
