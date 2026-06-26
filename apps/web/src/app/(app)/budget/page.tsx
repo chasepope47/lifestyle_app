@@ -126,7 +126,7 @@ export default function BudgetPage() {
   if (view === 'review' && unreviewed.length > 0) {
     const current = unreviewed[reviewIndex]
     return (
-      <div className="px-4 py-8 max-w-2xl mx-auto pb-20">
+      <div className="px-3 sm:px-4 py-6 sm:py-8 max-w-2xl mx-auto pb-20">
         <div className="flex items-center justify-between mb-8">
           <button onClick={() => setView('dashboard')} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg">
             <ArrowLeft className="w-5 h-5 text-stone-600 dark:text-stone-400" />
@@ -147,40 +147,40 @@ export default function BudgetPage() {
         <div
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
-          className={`rounded-2xl border border-stone-700 dark:border-stone-700 bg-stone-900/50 dark:bg-stone-800/50 p-6 mb-8 transition-all ${
+          className={`rounded-2xl border border-stone-700 dark:border-stone-700 bg-stone-900/50 dark:bg-stone-800/50 p-4 sm:p-6 mb-8 transition-all ${
             swipeDirection === 'up' ? 'scale-95 opacity-70' : swipeDirection === 'down' ? 'scale-95 opacity-70' :
             swipeDirection === 'left' ? 'translate-x-12 opacity-70' : swipeDirection === 'right' ? '-translate-x-12 opacity-70' : ''
           } cursor-grab active:cursor-grabbing`}
         >
-          <div className="flex gap-4 mb-6">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
+          <div className="flex gap-3 sm:gap-4 mb-6">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex-shrink-0 flex items-center justify-center text-white font-bold text-sm sm:text-lg">
               {(current.description || 'TX').substring(0, 2).toUpperCase()}
             </div>
-            <div className="flex-1">
-              <p className="text-xl font-semibold text-stone-50">{current.description}</p>
-              <p className="text-2xl font-bold text-white mt-2">{formatCurrency(Math.abs(current.amount))}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-lg sm:text-xl font-semibold text-stone-50 truncate">{current.description}</p>
+              <p className="text-xl sm:text-2xl font-bold text-white mt-2">{formatCurrency(Math.abs(current.amount))}</p>
             </div>
           </div>
 
           <p className="text-center text-sm text-stone-400 mb-4">Swipe to categorize</p>
 
           {/* Swipe guides */}
-          <div className="grid grid-cols-4 gap-2 text-xs text-center">
-            <div className="p-3 rounded-lg bg-stone-700/50">
-              <div className="text-lg mb-1">⬆️</div>
-              <div className="font-medium text-stone-300">{swipeConfig.up || 'Not set'}</div>
+          <div className="grid grid-cols-4 gap-2 text-xs sm:text-sm text-center">
+            <div className="p-2 sm:p-3 rounded-lg bg-stone-700/50">
+              <div className="text-base sm:text-lg mb-1">⬆️</div>
+              <div className="font-medium text-stone-300 text-xs">{swipeConfig.up || 'Not set'}</div>
             </div>
-            <div className="p-3 rounded-lg bg-stone-700/50">
-              <div className="text-lg mb-1">⬅️</div>
-              <div className="font-medium text-stone-300">{swipeConfig.left || 'Not set'}</div>
+            <div className="p-2 sm:p-3 rounded-lg bg-stone-700/50">
+              <div className="text-base sm:text-lg mb-1">⬅️</div>
+              <div className="font-medium text-stone-300 text-xs">{swipeConfig.left || 'Not set'}</div>
             </div>
-            <div className="p-3 rounded-lg bg-stone-700/50">
-              <div className="text-lg mb-1">➡️</div>
-              <div className="font-medium text-stone-300">{swipeConfig.right || 'Not set'}</div>
+            <div className="p-2 sm:p-3 rounded-lg bg-stone-700/50">
+              <div className="text-base sm:text-lg mb-1">➡️</div>
+              <div className="font-medium text-stone-300 text-xs">{swipeConfig.right || 'Not set'}</div>
             </div>
-            <div className="p-3 rounded-lg bg-stone-700/50">
-              <div className="text-lg mb-1">⬇️</div>
-              <div className="font-medium text-stone-300">{swipeConfig.down || 'Not set'}</div>
+            <div className="p-2 sm:p-3 rounded-lg bg-stone-700/50">
+              <div className="text-base sm:text-lg mb-1">⬇️</div>
+              <div className="font-medium text-stone-300 text-xs">{swipeConfig.down || 'Not set'}</div>
             </div>
           </div>
         </div>
@@ -244,12 +244,12 @@ export default function BudgetPage() {
   }
 
   return (
-    <div className="px-4 py-8 max-w-6xl mx-auto pb-20">
+    <div className="px-3 sm:px-4 py-6 sm:py-8 max-w-6xl mx-auto pb-20">
       {/* Safe to spend */}
-      <div className="rounded-2xl bg-gradient-to-br from-teal-600 to-cyan-600 p-8 mb-8 text-center">
-        <p className="text-teal-100 text-sm mb-2">safe to spend</p>
-        <p className="text-5xl font-bold text-white mb-3">{formatCurrency(safeToSpend)}</p>
-        <p className="text-teal-100 text-sm">this month</p>
+      <div className="rounded-2xl bg-gradient-to-br from-teal-600 to-cyan-600 p-6 sm:p-8 mb-8 text-center">
+        <p className="text-teal-100 text-xs sm:text-sm mb-2">safe to spend</p>
+        <p className="text-3xl sm:text-5xl font-bold text-white mb-3">{formatCurrency(safeToSpend)}</p>
+        <p className="text-teal-100 text-xs sm:text-sm">this month</p>
       </div>
 
       {/* Month selector */}
@@ -266,23 +266,23 @@ export default function BudgetPage() {
       </div>
 
       {/* Monthly averages */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="rounded-2xl bg-stone-800 dark:bg-stone-900 border border-stone-700 dark:border-stone-800 p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="rounded-2xl bg-stone-800 dark:bg-stone-900 border border-stone-700 dark:border-stone-800 p-4 text-center">
           <p className="text-sm text-stone-400 mb-1">Income</p>
           <p className="text-2xl font-bold text-stone-50">{formatCurrency(income)}</p>
         </div>
-        <div className="rounded-2xl bg-stone-800 dark:bg-stone-900 border border-stone-700 dark:border-stone-800 p-4">
+        <div className="rounded-2xl bg-stone-800 dark:bg-stone-900 border border-stone-700 dark:border-stone-800 p-4 text-center">
           <p className="text-sm text-stone-400 mb-1">Fixed Spend</p>
           <p className="text-2xl font-bold text-stone-50">{formatCurrency(expenses * 0.3)}</p>
         </div>
-        <div className="rounded-2xl bg-stone-800 dark:bg-stone-900 border border-stone-700 dark:border-stone-800 p-4">
+        <div className="rounded-2xl bg-stone-800 dark:bg-stone-900 border border-stone-700 dark:border-stone-800 p-4 text-center">
           <p className="text-sm text-stone-400 mb-1">Savings</p>
           <p className="text-2xl font-bold text-stone-50">{formatCurrency(income - expenses)}</p>
         </div>
       </div>
 
       {/* Spending breakdown */}
-      <div className="grid grid-cols-2 gap-8 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <div className="rounded-2xl bg-stone-800 dark:bg-stone-900 border border-stone-700 dark:border-stone-800 p-6">
           <h3 className="font-semibold text-stone-50 mb-4">Spending Breakdown</h3>
           <div className="space-y-3">
@@ -364,15 +364,15 @@ export default function BudgetPage() {
             return (
               <div key={tx.id} className={`rounded-xl border border-stone-700 dark:border-stone-700 p-4 ${catColor.light}`}>
                 <div className="flex items-start justify-between mb-3">
-                  <div className={`w-10 h-10 rounded-lg ${catColor.bg} flex items-center justify-center text-white font-bold text-sm`}>
+                  <div className={`w-10 h-10 rounded-lg ${catColor.bg} flex-shrink-0 flex items-center justify-center text-white font-bold text-sm`}>
                     {(tx.description || 'TX').substring(0, 2).toUpperCase()}
                   </div>
-                  <button className="p-1 hover:bg-stone-700/50 rounded">
+                  <button className="p-1 hover:bg-stone-700/50 rounded flex-shrink-0 ml-2">
                     <MoreHorizontal className="w-4 h-4 text-stone-500" />
                   </button>
                 </div>
-                <p className="text-sm font-medium text-stone-50 mb-1">{tx.description}</p>
-                <p className="text-2xl font-bold text-white mb-2">{formatCurrency(Math.abs(tx.amount))}</p>
+                <p className="text-sm font-medium text-stone-50 mb-1 truncate">{tx.description}</p>
+                <p className="text-xl sm:text-2xl font-bold text-white mb-2">{formatCurrency(Math.abs(tx.amount))}</p>
                 <p className="text-xs text-stone-400">{new Date(tx.transaction_date).toLocaleDateString()}</p>
               </div>
             )
