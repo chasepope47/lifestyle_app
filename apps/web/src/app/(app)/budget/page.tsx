@@ -223,14 +223,16 @@ export default function BudgetPage() {
 
     const headers = rows[0].map(h => h.trim())
     console.log('Headers found:', headers)
-    const dateIdx = headers.findIndex(h => h === 'Posting Date')
+
+    // Support multiple CSV formats
+    const dateIdx = headers.findIndex(h => h === 'Posting Date' || h === 'Date')
     const amountIdx = headers.findIndex(h => h === 'Amount')
     const descIdx = headers.findIndex(h => h === 'Description')
 
     console.log('Column indices:', { dateIdx, amountIdx, descIdx })
 
     if (dateIdx === -1 || amountIdx === -1 || descIdx === -1) {
-      throw new Error(`CSV missing required columns. Found: ${headers.slice(0, 5).join(', ')}...`)
+      throw new Error(`CSV missing required columns. Found: ${headers.join(', ')}`)
     }
 
     const transactions = []
