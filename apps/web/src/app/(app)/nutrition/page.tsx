@@ -222,6 +222,11 @@ export default function NutritionPage() {
     return new Date(d.getFullYear(), d.getMonth(), 1)
   })
   const [loggedDates, setLoggedDates] = useState<Set<string>>(new Set())
+  const [pendingFood, setPendingFood] = useState<FoodSearchResult | null>(null)
+  const [resultSource, setResultSource] = useState<'barcode' | 'search'>('search')
+  const [quantity, setQuantity] = useState(1)
+  const [weightValue, setWeightValue] = useState('100')
+  const [weightUnit, setWeightUnit] = useState<'g' | 'oz' | 'lbs'>('g')
 
   useEffect(() => {
     if (!user || !householdId) return
@@ -264,12 +269,26 @@ export default function NutritionPage() {
 
   const controlsRef = useRef<{ stop: () => void } | null>(null)
 
+  const toGrams = (val: number, unit: 'g' | 'oz' | 'lbs') => {
+    if (unit === 'oz') return val * 28.3495
+    if (unit === 'lbs') return val * 453.592
+    return val
+  }
+
+  const handleSelectFood = (food: FoodSearchResult) => {
+    setPendingFood(food)
+    setQuantity(1)
+    setWeightValue('100')
+    setWeightUnit('g')
+  }
+
   // Defined before startCamera so the ZXing callback can reference it
   const searchByBarcode = useCallback(async (barcode: string) => {
     if (!barcode.trim()) return
     setBarcodeSearching(true)
     setBarcodeError(null)
     setResults([])
+    setPendingFood(null)
     try {
       const res = await fetch(`/api/nutrition/barcode?code=${encodeURIComponent(barcode)}`)
       const data = await res.json()
@@ -277,6 +296,7 @@ export default function NutritionPage() {
         setBarcodeError(data.error ?? 'Product not found. Try searching by name below.')
       } else {
         setResults([data as FoodSearchResult])
+        setResultSource('barcode')
         // Close camera view so the result is front-and-center
         setShowBarcode(false)
       }
@@ -344,16 +364,19 @@ export default function NutritionPage() {
   const doSearch = async () => {
     if (!query.trim()) return
     setSearching(true)
+    setPendingFood(null)
     try {
       const r = await searchFoods(query, process.env.NEXT_PUBLIC_USDA_API_KEY)
       setResults(r)
+      setResultSource('search')
     } finally {
       setSearching(false)
     }
   }
 
-  const logFood = async (food: FoodSearchResult) => {
+  const logFood = async (food: FoodSearchResult, multiplier: number = 1) => {
     if (!user || !householdId) return
+    const m = multiplier
     const { data } = await supabase.from('food_entries').insert({
       user_id: user.id,
       household_id: householdId,
@@ -361,17 +384,18 @@ export default function NutritionPage() {
       meal_type: selectedMeal,
       food_name: food.description,
       brand: food.brandOwner ?? null,
-      calories: food.calories,
-      protein_g: food.protein_g,
-      carbs_g: food.carbs_g,
-      fat_g: food.fat_g,
-      fiber_g: food.fiber_g,
-      sodium_mg: food.sodium_mg,
+      calories: Math.round(food.calories * m),
+      protein_g: Math.round((food.protein_g ?? 0) * m * 10) / 10,
+      carbs_g: Math.round((food.carbs_g ?? 0) * m * 10) / 10,
+      fat_g: Math.round((food.fat_g ?? 0) * m * 10) / 10,
+      fiber_g: Math.round((food.fiber_g ?? 0) * m * 10) / 10,
+      sodium_mg: Math.round((food.sodium_mg ?? 0) * m),
     }).select().single()
     if (data) setEntries(prev => [...prev, data])
     setShowAdd(false)
     setQuery('')
     setResults([])
+    setPendingFood(null)
   }
 
   const deleteEntry = async (id: string) => {
@@ -595,7 +619,7 @@ export default function NutritionPage() {
           <div className="bg-stone-900 rounded-2xl p-6 w-full max-w-md max-h-[90vh] flex flex-col border border-stone-700">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-stone-50">Log food</h3>
-              <button onClick={() => { setShowAdd(false); setResults([]); setQuery(''); setShowBarcode(false); stopCamera() }} className="p-1 hover:bg-stone-800 rounded">
+              <button onClick={() => { setShowAdd(false); setResults([]); setQuery(''); setShowBarcode(false); stopCamera(); setPendingFood(null) }} className="p-1 hover:bg-stone-800 rounded">
                 <X className="w-5 h-5 text-stone-400" />
               </button>
             </div>
@@ -712,26 +736,128 @@ export default function NutritionPage() {
               </div>
             )}
 
-            <div className="overflow-y-auto flex-1 space-y-2">
-              {results.map(r => (
-                <button
-                  key={r.fdcId}
-                  onClick={() => logFood(r)}
-                  className="w-full text-left rounded-xl border border-stone-700 bg-stone-800 px-4 py-3 hover:bg-stone-700 transition-colors"
-                >
-                  <p className="text-sm font-semibold text-stone-50 line-clamp-1 mb-0.5">{r.description}</p>
-                  {r.brandOwner && <p className="text-xs text-stone-500 mb-2">{r.brandOwner}</p>}
-                  <div className="flex flex-wrap gap-x-3 gap-y-1">
-                    <span className="text-xs font-medium text-stone-300">{Math.round(r.calories)} kcal</span>
-                    <span className="text-xs text-blue-400">P {Math.round(r.protein_g)}g</span>
-                    <span className="text-xs text-yellow-400">C {Math.round(r.carbs_g)}g</span>
-                    <span className="text-xs text-red-400">F {Math.round(r.fat_g)}g</span>
-                    {r.fiber_g > 0 && <span className="text-xs text-emerald-400">Fiber {Math.round(r.fiber_g)}g</span>}
-                    {r.sodium_mg > 0 && <span className="text-xs text-orange-400">Na {Math.round(r.sodium_mg)}mg</span>}
+            {pendingFood ? (
+              <div className="flex-1 flex flex-col overflow-y-auto">
+                {/* Food header */}
+                <div className="rounded-xl bg-stone-800 border border-stone-700 p-4 mb-4">
+                  <p className="text-sm font-semibold text-stone-50 leading-snug">{pendingFood.description}</p>
+                  {pendingFood.brandOwner && <p className="text-xs text-stone-500 mt-0.5">{pendingFood.brandOwner}</p>}
+                </div>
+
+                {resultSource === 'barcode' ? (
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-stone-300 mb-3">How many did you have?</p>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setQuantity(q => Math.max(0.5, Math.round((q - 0.5) * 10) / 10))}
+                        className="w-11 h-11 rounded-xl bg-stone-700 text-stone-100 text-2xl flex items-center justify-center hover:bg-stone-600 transition-colors"
+                      >−</button>
+                      <span className="flex-1 text-center text-2xl font-bold text-stone-50">
+                        {quantity % 1 === 0 ? quantity : quantity.toFixed(1)}
+                      </span>
+                      <button
+                        onClick={() => setQuantity(q => Math.round((q + 0.5) * 10) / 10)}
+                        className="w-11 h-11 rounded-xl bg-stone-700 text-stone-100 text-2xl flex items-center justify-center hover:bg-stone-600 transition-colors"
+                      >+</button>
+                    </div>
+                    <p className="text-xs text-stone-500 text-center mt-2">
+                      {quantity === 1 ? '1 item / serving' : `${quantity % 1 === 0 ? quantity : quantity.toFixed(1)} items / servings`}
+                    </p>
                   </div>
-                </button>
-              ))}
-            </div>
+                ) : (
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-stone-300 mb-1">How much did you eat?</p>
+                    <p className="text-xs text-stone-500 mb-3">Values are per 100g — enter your actual amount to scale</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        value={weightValue}
+                        onChange={e => setWeightValue(e.target.value)}
+                        min="0"
+                        step="any"
+                        className="flex-1 px-4 py-2.5 rounded-xl border border-stone-600 bg-stone-800 text-stone-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                      <select
+                        value={weightUnit}
+                        onChange={e => setWeightUnit(e.target.value as 'g' | 'oz' | 'lbs')}
+                        className="px-3 py-2.5 rounded-xl border border-stone-600 bg-stone-800 text-stone-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      >
+                        <option value="g">g</option>
+                        <option value="oz">oz</option>
+                        <option value="lbs">lbs</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* Scaled nutrition preview */}
+                {(() => {
+                  const m = resultSource === 'barcode'
+                    ? quantity
+                    : toGrams(parseFloat(weightValue) || 0, weightUnit) / 100
+                  return (
+                    <div className="rounded-xl bg-stone-800 border border-stone-700 p-4 mb-4">
+                      <p className="text-xs text-stone-500 mb-3">Nutritional totals</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-xs text-stone-500">Calories</p>
+                          <p className="text-xl font-bold text-stone-50">{Math.round(pendingFood.calories * m)} <span className="text-sm font-normal text-stone-400">kcal</span></p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-stone-500">Protein</p>
+                          <p className="text-xl font-bold text-blue-400">{(pendingFood.protein_g * m).toFixed(1)}<span className="text-sm font-normal text-stone-400">g</span></p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-stone-500">Carbs</p>
+                          <p className="text-xl font-bold text-yellow-400">{(pendingFood.carbs_g * m).toFixed(1)}<span className="text-sm font-normal text-stone-400">g</span></p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-stone-500">Fat</p>
+                          <p className="text-xl font-bold text-red-400">{(pendingFood.fat_g * m).toFixed(1)}<span className="text-sm font-normal text-stone-400">g</span></p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPendingFood(null)}
+                    className="flex-1 py-2.5 rounded-xl bg-stone-800 text-stone-400 text-sm font-medium hover:bg-stone-700 transition-colors"
+                  >← Back</button>
+                  <button
+                    onClick={() => {
+                      const m = resultSource === 'barcode'
+                        ? quantity
+                        : toGrams(parseFloat(weightValue) || 0, weightUnit) / 100
+                      logFood(pendingFood, m)
+                    }}
+                    className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
+                  >Log food</button>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-y-auto flex-1 space-y-2">
+                {results.map(r => (
+                  <button
+                    key={r.fdcId}
+                    onClick={() => handleSelectFood(r)}
+                    className="w-full text-left rounded-xl border border-stone-700 bg-stone-800 px-4 py-3 hover:bg-stone-700 transition-colors"
+                  >
+                    <p className="text-sm font-semibold text-stone-50 line-clamp-1 mb-0.5">{r.description}</p>
+                    {r.brandOwner && <p className="text-xs text-stone-500 mb-2">{r.brandOwner}</p>}
+                    <div className="flex flex-wrap gap-x-3 gap-y-1">
+                      <span className="text-xs font-medium text-stone-300">{Math.round(r.calories)} kcal</span>
+                      <span className="text-xs text-blue-400">P {Math.round(r.protein_g)}g</span>
+                      <span className="text-xs text-yellow-400">C {Math.round(r.carbs_g)}g</span>
+                      <span className="text-xs text-red-400">F {Math.round(r.fat_g)}g</span>
+                      {r.fiber_g > 0 && <span className="text-xs text-emerald-400">Fiber {Math.round(r.fiber_g)}g</span>}
+                      {r.sodium_mg > 0 && <span className="text-xs text-orange-400">Na {Math.round(r.sodium_mg)}mg</span>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
