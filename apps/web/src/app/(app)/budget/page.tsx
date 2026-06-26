@@ -15,6 +15,7 @@ const CATEGORY_COLORS = {
   needs: { bg: 'bg-blue-500', light: 'bg-blue-500/20', text: 'text-blue-400' },
   wants: { bg: 'bg-yellow-500', light: 'bg-yellow-500/20', text: 'text-yellow-400' },
   savings: { bg: 'bg-green-500', light: 'bg-green-500/20', text: 'text-green-400' },
+  transfers: { bg: 'bg-purple-500', light: 'bg-purple-500/20', text: 'text-purple-400' },
 }
 
 const TRANSACTION_CATEGORIES = [
@@ -36,7 +37,7 @@ export default function BudgetPage() {
     up: 'needs',
     down: 'savings',
     left: 'wants',
-    right: '',
+    right: 'transfers',
   })
   const [showSwipeSettings, setShowSwipeSettings] = useState(false)
   const [swipeDirection, setSwipeDirection] = useState<SwipeDirection | null>(null)
@@ -69,6 +70,7 @@ export default function BudgetPage() {
     needs: monthTransactions.filter(t => t.category === 'needs' && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
     wants: monthTransactions.filter(t => t.category === 'wants' && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
     savings: monthTransactions.filter(t => t.category === 'savings' && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
+    transfers: monthTransactions.filter(t => t.category === 'transfers' && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
   }
 
   const totalCategorySpending = categorySpending.needs + categorySpending.wants + categorySpending.savings
