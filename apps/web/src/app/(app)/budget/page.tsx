@@ -213,9 +213,13 @@ export default function BudgetPage() {
   }
 
   const parseCSVTransactions = async (file: File, accountId: string) => {
-    const text = await file.text()
-    const rows = parseCSV(text)
-    if (rows.length < 2) throw new Error('CSV file is empty')
+    try {
+      console.log('Starting CSV parse for file:', file.name)
+      const text = await file.text()
+      console.log('File text length:', text.length)
+      const rows = parseCSV(text)
+      console.log('Parsed rows:', rows.length)
+      if (rows.length < 2) throw new Error('CSV file is empty')
 
     const headers = rows[0]
     const dateIdx = headers.findIndex(h => h === 'Posting Date')
@@ -250,24 +254,42 @@ export default function BudgetPage() {
       }
     }
 
-    return transactions
+      console.log('Total transactions to import:', transactions.length)
+      return transactions
+    } catch (err) {
+      console.error('Error parsing CSV:', err)
+      throw err
+    }
   }
 
   const uploadStatement = async () => {
-    if (!statementFile || !editingAccount || !user || !householdId) return
+    console.log('uploadStatement called', { statementFile: statementFile?.name, editingAccount: editingAccount?.name })
+    if (!statementFile || !editingAccount || !user || !householdId) {
+      alert('Missing required data. Please try again.')
+      return
+    }
     try {
       let importCount = 0
       if (statementFile.name.endsWith('.csv')) {
+        console.log('Parsing CSV file:', statementFile.name)
         const newTransactions = await parseCSVTransactions(statementFile, editingAccount.id)
+        console.log('Parsed transactions:', newTransactions.length)
         if (newTransactions.length > 0 && householdId && user?.id) {
           const validTransactions = newTransactions.map(t => ({
             ...t,
             household_id: householdId,
             user_id: user.id,
           }))
+          console.log('Inserting transactions:', validTransactions.length)
           const { error: insertError } = await supabase.from('transactions').insert(validTransactions)
-          if (insertError) throw insertError
+          if (insertError) {
+            console.error('Insert error:', insertError)
+            throw insertError
+          }
           importCount = newTransactions.length
+          console.log('Import successful:', importCount)
+        } else {
+          console.log('No new transactions found')
         }
         alert(`✓ Bank statement imported!\n${importCount} new transactions added.`)
       } else {
@@ -278,7 +300,7 @@ export default function BudgetPage() {
       if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (err) {
       console.error('Error importing statement:', err)
-      alert(`Failed to import bank statement: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      alert(`Failed to import bank statement: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
