@@ -80,8 +80,9 @@ export default function BudgetPage() {
 
   const updateTransactionCategory = async (txId: string, category: string, emotion?: string) => {
     await supabase.from('transactions').update({ category, emotion }).eq('id', txId)
-    setUnreviewed(prev => prev.filter(t => t.id !== txId))
-    if (reviewIndex < unreviewed.length - 1) {
+    const newUnreviewed = unreviewed.filter(t => t.id !== txId)
+    setUnreviewed(newUnreviewed)
+    if (reviewIndex < newUnreviewed.length) {
       setReviewIndex(reviewIndex + 1)
     } else {
       setView('dashboard')
@@ -112,10 +113,11 @@ export default function BudgetPage() {
 
     if (direction && swipeConfig[direction]) {
       setSwipeDirection(direction)
+      const category = swipeConfig[direction]
       setTimeout(() => {
         if (view === 'review' && unreviewed.length > reviewIndex) {
           const current = unreviewed[reviewIndex]
-          updateTransactionCategory(current.id, swipeConfig[direction])
+          updateTransactionCategory(current.id, category)
         }
       }, 200)
     }
@@ -150,7 +152,7 @@ export default function BudgetPage() {
           className={`rounded-2xl border border-stone-700 dark:border-stone-700 bg-stone-900/50 dark:bg-stone-800/50 p-4 sm:p-6 mb-8 transition-all ${
             swipeDirection === 'up' ? 'scale-95 opacity-70' : swipeDirection === 'down' ? 'scale-95 opacity-70' :
             swipeDirection === 'left' ? 'translate-x-12 opacity-70' : swipeDirection === 'right' ? '-translate-x-12 opacity-70' : ''
-          } cursor-grab active:cursor-grabbing`}
+          } cursor-grab active:cursor-grabbing touch-none`}
         >
           <div className="flex gap-3 sm:gap-4 mb-6">
             <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex-shrink-0 flex items-center justify-center text-white font-bold text-sm sm:text-lg">
