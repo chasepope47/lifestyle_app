@@ -81,11 +81,12 @@ export default function BudgetPage() {
     transfers: monthTransactions.filter(t => t.category === 'transfers').reduce((s, t) => s + Math.abs(t.amount), 0),
   }
 
-  const totalCategorySpending = categorySpending.needs + categorySpending.wants + categorySpending.savings
+  const totalCategorySpending = categorySpending.needs + categorySpending.wants + categorySpending.savings + categorySpending.transfers
   const categoryPercentages = {
     needs: totalCategorySpending > 0 ? (categorySpending.needs / totalCategorySpending) * 100 : 0,
     wants: totalCategorySpending > 0 ? (categorySpending.wants / totalCategorySpending) * 100 : 0,
     savings: totalCategorySpending > 0 ? (categorySpending.savings / totalCategorySpending) * 100 : 0,
+    transfers: totalCategorySpending > 0 ? (categorySpending.transfers / totalCategorySpending) * 100 : 0,
   }
 
   const updateTransactionCategory = async (txId: string, category: string, emotion?: string) => {
@@ -529,6 +530,13 @@ export default function BudgetPage() {
               </div>
               <span className="text-stone-50 font-semibold">{categoryPercentages.savings.toFixed(0)}%</span>
             </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-purple-500" />
+                <span className="text-stone-300">Transfers</span>
+              </div>
+              <span className="text-stone-50 font-semibold">{categoryPercentages.transfers.toFixed(0)}%</span>
+            </div>
           </div>
         </div>
 
@@ -568,7 +576,7 @@ export default function BudgetPage() {
                 <span className="text-stone-50">{formatCurrency(categorySpending.transfers)}</span>
               </div>
               <div className="h-2 bg-stone-700 rounded-full overflow-hidden">
-                <div className="h-full bg-purple-500" style={{ width: `${totalCategorySpending > 0 ? (categorySpending.transfers / (totalCategorySpending + categorySpending.transfers)) * 100 : 0}%` }} />
+                <div className="h-full bg-purple-500" style={{ width: `${categoryPercentages.transfers}%` }} />
               </div>
             </div>
           </div>
