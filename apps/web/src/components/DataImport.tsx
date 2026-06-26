@@ -98,16 +98,17 @@ export function DataImport() {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".xml,.zip,.tcx,.gpx,.fit"
+          accept=".xml,.tcx,.gpx"
+          multiple
           onChange={handleChange}
           className="hidden"
         />
         <Upload className="w-12 h-12 text-stone-400 dark:text-stone-600 mx-auto mb-3" />
         <p className="text-sm font-medium text-stone-900 dark:text-stone-50 mb-1">
-          Drag and drop your file here
+          Drag and drop your files here
         </p>
         <p className="text-xs text-stone-500 dark:text-stone-400 mb-4">
-          or click to select (XML, ZIP, TCX, GPX, FIT)
+          or click to select (XML, TCX, GPX)
         </p>
         <button
           onClick={() => fileInputRef.current?.click()}
@@ -120,7 +121,7 @@ export function DataImport() {
               Processing...
             </>
           ) : (
-            'Select File'
+            'Select Files'
           )}
         </button>
       </div>
@@ -170,12 +171,13 @@ export function DataImport() {
             </ol>
           </div>
           <div>
-            <h4 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Garmin</h4>
+            <h4 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Garmin Activities (TCX/GPX)</h4>
             <ol className="text-sm text-stone-600 dark:text-stone-400 space-y-1 ml-4 list-decimal">
               <li>Visit Garmin Connect (connect.garmin.com)</li>
-              <li>Go to Settings → Export Your Data</li>
-              <li>Download and extract the ZIP file</li>
-              <li>Upload the ZIP containing your data</li>
+              <li>Go to Activities and select an activity</li>
+              <li>Click Export and choose TCX or GPX format</li>
+              <li>Upload the TCX/GPX file here</li>
+              <li>Repeat for each activity you want to import</li>
             </ol>
           </div>
         </div>

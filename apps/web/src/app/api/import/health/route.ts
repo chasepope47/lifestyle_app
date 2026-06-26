@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import JSZip from 'jszip'
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: 'File too large (max 100MB)' }, { status: 400 })
+      return NextResponse.json({ error: 'File too large (max 50MB)' }, { status: 400 })
     }
 
     const supabase = await createClient()
@@ -25,11 +24,11 @@ export async function POST(request: NextRequest) {
     if (file.name.endsWith('.xml')) {
       const result = await parseAppleHealth(file, supabase, householdId, userId)
       results.push(...result)
-    } else if (file.name.endsWith('.zip')) {
-      const result = await parseGarmin(file, supabase, householdId, userId)
+    } else if (file.name.endsWith('.tcx') || file.name.endsWith('.gpx')) {
+      const result = await parseTCXorGPX(file, supabase, householdId, userId)
       results.push(...result)
     } else {
-      return NextResponse.json({ error: 'Unsupported file type. Please use XML (Apple Health) or ZIP (Garmin)' }, { status: 400 })
+      return NextResponse.json({ error: 'Unsupported file type. Please use: XML (Apple Health), TCX or GPX (Garmin activities)' }, { status: 400 })
     }
 
     return NextResponse.json({ results })
@@ -110,73 +109,30 @@ async function parseAppleHealth(file: File, supabase: any, householdId: string, 
   return [{ success: true, message: 'No health data found in export' }]
 }
 
-async function parseGarmin(file: File, supabase: any, householdId: string, userId: string) {
-  const zip = new JSZip()
-  const contents = await zip.loadAsync(file)
+async function parseTCXorGPX(file: File, supabase: any, householdId: string, userId: string) {
+  const content = await file.text()
   const results = []
 
-  // Parse activities (workouts)
-  const activitiesDir = Object.keys(contents.files).filter(f => f.includes('Activities'))
-  const workoutsToInsert = []
-
-  for (const filename of activitiesDir) {
-    if (filename.endsWith('.tcx') || filename.endsWith('.gpx')) {
-      const content = await contents.file(filename)?.async('text')
-      if (content) {
-        const workoutData = parseTCXorGPX(content, filename)
-        if (workoutData) {
-          workoutData.user_id = userId
-          workoutData.household_id = householdId
-          workoutsToInsert.push(workoutData)
-        }
-      }
-    }
+  const workoutData = parseTCXorGPXContent(content, file.name)
+  if (!workoutData) {
+    return [{ success: false, message: 'Unable to parse workout file' }]
   }
 
-  if (workoutsToInsert.length > 0) {
-    const { error } = await supabase.from('workout_sessions').insert(workoutsToInsert)
-    if (error) {
-      results.push({ success: false, message: `Failed to import workouts: ${error.message}` })
-    } else {
-      results.push({ success: true, message: 'Workouts imported', count: workoutsToInsert.length, type: 'workouts' })
-    }
+  workoutData.user_id = userId
+  workoutData.household_id = householdId
+
+  const { error } = await supabase.from('workout_sessions').insert(workoutData).select().single()
+
+  if (error) {
+    results.push({ success: false, message: `Failed to import workout: ${error.message}` })
+  } else {
+    results.push({ success: true, message: `Workout imported: ${file.name}`, count: 1, type: 'workout' })
   }
 
-  // Parse daily summaries
-  const summariesDir = Object.keys(contents.files).filter(f => f.includes('DailySummaryData'))
-  const metricsToInsert = []
-
-  for (const filename of summariesDir) {
-    if (filename.endsWith('.json')) {
-      const content = await contents.file(filename)?.async('text')
-      if (content) {
-        try {
-          const data = JSON.parse(content)
-          const metricsData = parseGarminDailySummary(data, userId, householdId)
-          metricsToInsert.push(...metricsData)
-        } catch (e) {
-          console.error('Failed to parse daily summary:', e)
-        }
-      }
-    }
-  }
-
-  if (metricsToInsert.length > 0) {
-    const { error } = await supabase
-      .from('health_metrics')
-      .upsert(metricsToInsert, { onConflict: 'user_id,source,metric_date' })
-
-    if (error) {
-      results.push({ success: false, message: `Failed to import health metrics: ${error.message}` })
-    } else {
-      results.push({ success: true, message: 'Daily metrics imported', count: metricsToInsert.length, type: 'metric days' })
-    }
-  }
-
-  return results.length > 0 ? results : [{ success: true, message: 'Import completed' }]
+  return results
 }
 
-function parseTCXorGPX(content: string, filename: string) {
+function parseTCXorGPXContent(content: string, filename: string) {
   try {
     // Extract start time from <Activity startTime="2024-06-25T10:30:00Z" or <time>2024-06-25T10:30:00Z</time>
     let startTime: string | null = null
@@ -186,17 +142,7 @@ function parseTCXorGPX(content: string, filename: string) {
     if (!startTime) return null
 
     // Extract total distance (in meters) and duration (in seconds)
-    let totalDistance = 0
     let totalDuration = 0
-
-    // TCX format: <DistanceMeters>1234.56</DistanceMeters>
-    const distanceMatches = content.match(/<DistanceMeters>([^<]+)<\/DistanceMeters>/g)
-    if (distanceMatches) {
-      for (const match of distanceMatches) {
-        const distance = parseFloat(match.replace(/<\/?DistanceMeters>/g, ''))
-        totalDistance += distance
-      }
-    }
 
     // TCX format: <TotalTimeSeconds>3600</TotalTimeSeconds>
     const durationMatches = content.match(/<TotalTimeSeconds>([^<]+)<\/TotalTimeSeconds>/g)
@@ -210,36 +156,11 @@ function parseTCXorGPX(content: string, filename: string) {
     return {
       started_at: startTime,
       ended_at: new Date(new Date(startTime).getTime() + totalDuration * 1000).toISOString(),
-      title: `${filename.split('/').pop()?.replace(/\.[^/.]+$/, '')} (Garmin)`,
+      title: `${filename.replace(/\.[^/.]+$/, '')} (Garmin)`,
       duration_minutes: Math.round(totalDuration / 60),
     }
   } catch (e) {
     console.error('Error parsing TCX/GPX:', e)
     return null
   }
-}
-
-function parseGarminDailySummary(data: any, userId: string, householdId: string) {
-  const metrics = []
-
-  // Handle both direct data and data.summaryData structure
-  const summaries = Array.isArray(data) ? data : data.summaryData || [data]
-
-  for (const summary of summaries) {
-    if (!summary.calendarDate) continue
-
-    metrics.push({
-      user_id: userId,
-      household_id: householdId,
-      source: 'garmin',
-      metric_date: summary.calendarDate,
-      steps: summary.totalSteps,
-      calories_burned: summary.activeKilocalories || summary.totalKilocalories,
-      active_minutes: summary.activeMinutes || summary.intensityMinutesHigh ? (summary.intensityMinutesHigh + summary.intensityMinutesModerate) : undefined,
-      heart_rate_avg: summary.restingHeartRateInBeatsPerMinute,
-      sleep_hours: summary.sleepData ? (summary.sleepData.totalSleepInSeconds / 3600) : undefined,
-    })
-  }
-
-  return metrics
 }
