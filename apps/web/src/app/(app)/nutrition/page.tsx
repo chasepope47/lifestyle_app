@@ -271,29 +271,17 @@ export default function NutritionPage() {
     setBarcodeError(null)
     setResults([])
     try {
-      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`)
+      const res = await fetch(`/api/nutrition/barcode?code=${encodeURIComponent(barcode)}`)
       const data = await res.json()
-      if (data.status === 1 && data.product) {
-        const product = data.product
-        const food: FoodSearchResult = {
-          fdcId: parseInt(barcode) || 0,
-          description: product.product_name || product.product_name_en || 'Unknown product',
-          brandOwner: product.brands || null,
-          calories: product.nutriments?.['energy-kcal_100g'] ?? product.nutriments?.['energy-kcal'] ?? 0,
-          protein_g: product.nutriments?.['proteins_100g'] ?? product.nutriments?.proteins ?? 0,
-          carbs_g: product.nutriments?.['carbohydrates_100g'] ?? product.nutriments?.carbohydrates ?? 0,
-          fat_g: product.nutriments?.['fat_100g'] ?? product.nutriments?.fat ?? 0,
-          fiber_g: product.nutriments?.['fiber_100g'] ?? product.nutriments?.fiber ?? 0,
-          sodium_mg: (product.nutriments?.['sodium_100g'] ?? product.nutriments?.sodium ?? 0) * 1000,
-        }
-        setResults([food])
+      if (!res.ok) {
+        setBarcodeError(data.error ?? 'Product not found. Try searching by name below.')
+      } else {
+        setResults([data as FoodSearchResult])
         // Close camera view so the result is front-and-center
         setShowBarcode(false)
-      } else {
-        setBarcodeError('Product not found. Try searching by name below.')
       }
     } catch {
-      setBarcodeError('Could not reach barcode database. Check your connection.')
+      setBarcodeError('Could not search — check your connection.')
     } finally {
       setBarcodeSearching(false)
     }
