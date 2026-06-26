@@ -365,10 +365,8 @@ export default function BudgetPage() {
           <button onClick={() => setView('dashboard')} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg">
             <ArrowLeft className="w-5 h-5 text-stone-600 dark:text-stone-400" />
           </button>
-          <h1 className="text-xl font-bold text-stone-900 dark:text-stone-50">Review Transactions</h1>
-          <button onClick={() => setShowSwipeSettings(true)} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg">
-            <Settings className="w-5 h-5 text-stone-600 dark:text-stone-400" />
-          </button>
+          <h1 className="text-xl font-bold text-stone-900 dark:text-stone-50">Categorize Transactions</h1>
+          <div className="w-8"></div>
         </div>
 
         <div className="text-center mb-8">
@@ -377,21 +375,8 @@ export default function BudgetPage() {
           </p>
         </div>
 
-        {/* Swipeable transaction card */}
-        <div
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          className={`rounded-2xl border border-stone-700 dark:border-stone-700 bg-stone-900/50 dark:bg-stone-800/50 p-4 sm:p-6 mb-8 ${
-            swipeDirection ? 'transition-all' : ''
-          } cursor-grab active:cursor-grabbing touch-none`}
-          style={{
-            transform: swipeDirection
-              ? (swipeDirection === 'up' ? 'scale(0.95)' : swipeDirection === 'down' ? 'scale(0.95)' :
-                 swipeDirection === 'left' ? 'translateX(48px)' : 'translateX(-48px)') + ' opacity(0.7)'
-              : `translateX(${swipeOffset.x * 0.5}px) translateY(${swipeOffset.y * 0.5}px)`
-          }}
-        >
+        {/* Transaction card */}
+        <div className="rounded-2xl border border-stone-700 dark:border-stone-700 bg-stone-900/50 dark:bg-stone-800/50 p-4 sm:p-6 mb-8">
           <div className="flex gap-3 sm:gap-4 mb-6">
             <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex-shrink-0 flex items-center justify-center text-white font-bold text-sm sm:text-lg">
               {(current.description || 'TX').substring(0, 2).toUpperCase()}
@@ -401,84 +386,58 @@ export default function BudgetPage() {
               <p className="text-xl sm:text-2xl font-bold text-white mt-2">{formatCurrency(Math.abs(current.amount))}</p>
             </div>
           </div>
-
-          <p className="text-center text-sm text-stone-400 mb-4">Swipe to categorize</p>
-
-          {/* Swipe guides */}
-          <div className="grid grid-cols-4 gap-2 text-xs sm:text-sm text-center">
-            <div className="p-2 sm:p-3 rounded-lg bg-stone-700/50">
-              <div className="text-base sm:text-lg mb-1">⬆️</div>
-              <div className="font-medium text-stone-300 text-xs">{swipeConfig.up || 'Not set'}</div>
-            </div>
-            <div className="p-2 sm:p-3 rounded-lg bg-stone-700/50">
-              <div className="text-base sm:text-lg mb-1">⬅️</div>
-              <div className="font-medium text-stone-300 text-xs">{swipeConfig.left || 'Not set'}</div>
-            </div>
-            <div className="p-2 sm:p-3 rounded-lg bg-stone-700/50">
-              <div className="text-base sm:text-lg mb-1">➡️</div>
-              <div className="font-medium text-stone-300 text-xs">{swipeConfig.right || 'Not set'}</div>
-            </div>
-            <div className="p-2 sm:p-3 rounded-lg bg-stone-700/50">
-              <div className="text-base sm:text-lg mb-1">⬇️</div>
-              <div className="font-medium text-stone-300 text-xs">{swipeConfig.down || 'Not set'}</div>
-            </div>
-          </div>
+          <p className="text-sm text-stone-400">{current.transaction_date}</p>
         </div>
 
-        <div className="flex items-center justify-between mb-6">
+        {/* Navigation and categorization */}
+        <div className="flex items-center justify-between mb-8 gap-2">
           <button
             onClick={() => setReviewIndex(Math.max(0, reviewIndex - 1))}
             disabled={reviewIndex === 0}
-            className="flex items-center gap-2 px-4 py-2 text-stone-400 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ArrowLeft className="w-4 h-4" /> Undo
+            <ChevronLeft className="w-5 h-5" /> Previous
           </button>
           <p className="text-sm text-stone-400">{reviewIndex + 1} of {unreviewed.length}</p>
-          <button onClick={() => {
-            if (reviewIndex < unreviewed.length - 1) setReviewIndex(reviewIndex + 1)
-            else setView('dashboard')
-          }}
-            className="flex items-center gap-2 px-4 py-2 text-blue-400"
+          <button
+            onClick={() => {
+              if (reviewIndex < unreviewed.length - 1) setReviewIndex(reviewIndex + 1)
+              else setView('dashboard')
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-300"
           >
-            Skip <ChevronRight className="w-4 h-4" />
+            Next <ChevronRight className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Swipe Settings Modal */}
-        {showSwipeSettings && (
-          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
-            <div className="bg-stone-900 rounded-2xl p-6 w-full max-w-sm">
-              <h2 className="text-lg font-semibold text-stone-50 mb-6">Configure Swipe Gestures</h2>
+        {/* Category buttons */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <button
+            onClick={() => updateTransactionCategory(current.id, 'needs')}
+            className="px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+          >
+            Needs
+          </button>
+          <button
+            onClick={() => updateTransactionCategory(current.id, 'wants')}
+            className="px-4 py-3 rounded-xl bg-yellow-600 hover:bg-yellow-700 text-white font-medium transition-colors"
+          >
+            Wants
+          </button>
+          <button
+            onClick={() => updateTransactionCategory(current.id, 'savings')}
+            className="px-4 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-medium transition-colors"
+          >
+            Savings
+          </button>
+          <button
+            onClick={() => updateTransactionCategory(current.id, 'transfers')}
+            className="px-4 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-medium transition-colors"
+          >
+            Transfers
+          </button>
+        </div>
 
-              <div className="space-y-4">
-                {(['up', 'down', 'left', 'right'] as SwipeDirection[]).map(dir => (
-                  <div key={dir}>
-                    <label className="block text-sm font-medium text-stone-300 mb-2">
-                      {dir === 'up' ? '⬆️ Swipe Up' : dir === 'down' ? '⬇️ Swipe Down' : dir === 'left' ? '⬅️ Swipe Left' : '➡️ Swipe Right'}
-                    </label>
-                    <select
-                      value={swipeConfig[dir]}
-                      onChange={(e) => setSwipeConfig(p => ({ ...p, [dir]: e.target.value }))}
-                      className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-2.5 text-stone-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Not assigned</option>
-                      <option value="needs">Needs</option>
-                      <option value="wants">Wants</option>
-                      <option value="savings">Savings</option>
-                    </select>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => setShowSwipeSettings(false)}
-                className="w-full mt-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     )
   }
