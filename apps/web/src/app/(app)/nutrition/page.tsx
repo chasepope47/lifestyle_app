@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Plus, Search, Barcode, X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
+import { Plus, Search, Barcode, X, ChevronLeft, ChevronRight, Trash2, CalendarDays } from 'lucide-react'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
@@ -96,6 +96,104 @@ function MacroBar({ protein, carbs, fat }: { protein: number; carbs: number; fat
   )
 }
 
+const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+
+function CalendarModal({
+  selectedDate,
+  loggedDates,
+  calendarMonth,
+  onMonthChange,
+  onSelect,
+  onClose,
+}: {
+  selectedDate: string
+  loggedDates: Set<string>
+  calendarMonth: Date
+  onMonthChange: (d: Date) => void
+  onSelect: (date: string) => void
+  onClose: () => void
+}) {
+  const today = todayISO()
+  const year = calendarMonth.getFullYear()
+  const month = calendarMonth.getMonth()
+  const firstDow = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const cells: (number | null)[] = [
+    ...Array(firstDow).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ]
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  const toISO = (day: number) =>
+    `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-stone-900 border border-stone-700 rounded-2xl p-5 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+        {/* Month navigation */}
+        <div className="flex items-center justify-between mb-5">
+          <button onClick={() => onMonthChange(new Date(year, month - 1))} className="p-2 rounded-lg hover:bg-stone-800 text-stone-400">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <h3 className="font-semibold text-stone-50">
+            {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          </h3>
+          <button
+            onClick={() => onMonthChange(new Date(year, month + 1))}
+            disabled={year > new Date().getFullYear() || (year === new Date().getFullYear() && month >= new Date().getMonth())}
+            className="p-2 rounded-lg hover:bg-stone-800 text-stone-400 disabled:opacity-30"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Day of week headers */}
+        <div className="grid grid-cols-7 mb-1">
+          {DAY_LABELS.map(d => (
+            <div key={d} className="text-center text-[11px] font-medium text-stone-500 py-1">{d}</div>
+          ))}
+        </div>
+
+        {/* Day cells */}
+        <div className="grid grid-cols-7 gap-y-1">
+          {cells.map((day, i) => {
+            if (!day) return <div key={i} />
+            const iso = toISO(day)
+            const isSelected = iso === selectedDate
+            const isToday = iso === today
+            const isFuture = iso > today
+            const hasEntries = loggedDates.has(iso)
+            return (
+              <button
+                key={i}
+                disabled={isFuture}
+                onClick={() => { onSelect(iso); onClose() }}
+                className={`relative flex flex-col items-center justify-center h-10 w-full rounded-xl text-sm font-medium transition-colors
+                  ${isSelected ? 'bg-emerald-600 text-white' : isToday ? 'bg-stone-700 text-emerald-400' : isFuture ? 'text-stone-700 cursor-not-allowed' : 'text-stone-300 hover:bg-stone-800'}`}
+              >
+                {day}
+                {hasEntries && !isSelected && (
+                  <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-emerald-400" />
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-stone-800">
+          <span className="flex items-center gap-1.5 text-xs text-stone-500">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> Logged
+          </span>
+          <span className="flex items-center gap-1.5 text-xs text-stone-500">
+            <span className="w-3 h-3 rounded-md bg-stone-700 inline-block" /> Today
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function NutritionPage() {
   const { householdId } = useHousehold()
   const { user } = useAuth()
@@ -113,6 +211,12 @@ export default function NutritionPage() {
   const [barcodeInput, setBarcodeInput] = useState('')
   const [barcodeSearching, setBarcodeSearching] = useState(false)
   const [expandedMeals, setExpandedMeals] = useState<Set<string>>(new Set(MEAL_ORDER))
+  const [showCalendar, setShowCalendar] = useState(false)
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const d = new Date()
+    return new Date(d.getFullYear(), d.getMonth(), 1)
+  })
+  const [loggedDates, setLoggedDates] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!user || !householdId) return
@@ -126,6 +230,23 @@ export default function NutritionPage() {
       setLoading(false)
     })
   }, [user, householdId, viewDate])
+
+  useEffect(() => {
+    if (!user) return
+    const year = calendarMonth.getFullYear()
+    const month = calendarMonth.getMonth()
+    const firstDay = `${year}-${String(month + 1).padStart(2, '0')}-01`
+    const lastDay = `${year}-${String(month + 1).padStart(2, '0')}-${new Date(year, month + 1, 0).getDate()}`
+    supabase
+      .from('food_entries')
+      .select('entry_date')
+      .eq('user_id', user.id)
+      .gte('entry_date', firstDay)
+      .lte('entry_date', lastDay)
+      .then(({ data }) => {
+        setLoggedDates(new Set((data ?? []).map(r => r.entry_date)))
+      })
+  }, [user, calendarMonth])
 
   const shiftDate = (days: number) => {
     const d = new Date(viewDate)
@@ -230,20 +351,30 @@ export default function NutritionPage() {
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button onClick={() => shiftDate(-1)} className="p-2 rounded-lg hover:bg-stone-800 text-stone-400">
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <div>
-            <h1 className="text-lg font-bold text-stone-50">{isToday ? 'Today' : displayDate}</h1>
-            {!isToday && <p className="text-xs text-stone-500">{displayDate}</p>}
-          </div>
+          <button
+            onClick={() => {
+              const d = new Date(viewDate + 'T12:00:00')
+              setCalendarMonth(new Date(d.getFullYear(), d.getMonth(), 1))
+              setShowCalendar(true)
+            }}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-stone-800 transition-colors group"
+          >
+            <CalendarDays className="w-4 h-4 text-stone-500 group-hover:text-stone-300" />
+            <div className="text-left">
+              <h1 className="text-lg font-bold text-stone-50 leading-tight">{isToday ? 'Today' : displayDate}</h1>
+              {!isToday && <p className="text-xs text-stone-500">{displayDate}</p>}
+            </div>
+          </button>
           <button onClick={() => shiftDate(1)} disabled={isToday} className="p-2 rounded-lg hover:bg-stone-800 text-stone-400 disabled:opacity-30">
             <ChevronRight className="w-5 h-5" />
           </button>
           {!isToday && (
             <button onClick={() => setViewDate(todayISO())} className="text-xs text-blue-400 hover:text-blue-300 px-2 py-1 rounded-lg hover:bg-stone-800">
-              Back to today
+              Today
             </button>
           )}
         </div>
@@ -398,6 +529,22 @@ export default function NutritionPage() {
           )
         })}
       </div>
+
+      {/* Calendar modal */}
+      {showCalendar && (
+        <CalendarModal
+          selectedDate={viewDate}
+          loggedDates={loggedDates}
+          calendarMonth={calendarMonth}
+          onMonthChange={month => {
+            setCalendarMonth(month)
+          }}
+          onSelect={date => {
+            setViewDate(date)
+          }}
+          onClose={() => setShowCalendar(false)}
+        />
+      )}
 
       {/* Log food modal */}
       {showAdd && (
