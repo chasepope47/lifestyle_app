@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
-import { Plus, ChevronDown, ChevronLeft, ChevronRight, Meh, Frown, Smile, MoreHorizontal, ArrowLeft, Settings, X, Upload, Link2 } from 'lucide-react'
+import { Plus, ChevronDown, ChevronLeft, ChevronRight, Meh, Frown, Smile, MoreHorizontal, ArrowLeft, Settings, X, Upload, Link2, ArrowLeftRight } from 'lucide-react'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
@@ -78,7 +78,7 @@ export default function BudgetPage() {
     needs: monthTransactions.filter(t => t.category === 'needs' && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
     wants: monthTransactions.filter(t => t.category === 'wants' && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
     savings: monthTransactions.filter(t => t.category === 'savings' && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
-    transfers: monthTransactions.filter(t => t.category === 'transfers' && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
+    transfers: monthTransactions.filter(t => t.category === 'transfers').reduce((s, t) => s + Math.abs(t.amount), 0),
   }
 
   const totalCategorySpending = categorySpending.needs + categorySpending.wants + categorySpending.savings
@@ -480,8 +480,8 @@ export default function BudgetPage() {
         </button>
       </div>
 
-      {/* Monthly averages */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      {/* Monthly summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <div className="rounded-2xl bg-stone-800 dark:bg-stone-900 border border-stone-700 dark:border-stone-800 p-4 text-center">
           <p className="text-sm text-stone-400 mb-1">Income</p>
           <p className="text-2xl font-bold text-stone-50">{formatCurrency(income)}</p>
@@ -493,6 +493,13 @@ export default function BudgetPage() {
         <div className="rounded-2xl bg-stone-800 dark:bg-stone-900 border border-stone-700 dark:border-stone-800 p-4 text-center">
           <p className="text-sm text-stone-400 mb-1">Savings</p>
           <p className="text-2xl font-bold text-stone-50">{formatCurrency(income - expenses)}</p>
+        </div>
+        <div className="rounded-2xl bg-stone-800 dark:bg-stone-900 border border-stone-700 dark:border-stone-800 p-4 text-center">
+          <div className="flex items-center justify-center gap-1.5 mb-1">
+            <ArrowLeftRight className="w-3.5 h-3.5 text-purple-400" />
+            <p className="text-sm text-stone-400">Transfers</p>
+          </div>
+          <p className="text-2xl font-bold text-purple-400">{formatCurrency(categorySpending.transfers)}</p>
         </div>
       </div>
 
@@ -553,6 +560,15 @@ export default function BudgetPage() {
               </div>
               <div className="h-2 bg-stone-700 rounded-full overflow-hidden">
                 <div className="h-full bg-green-500" style={{ width: `${categoryPercentages.savings}%` }} />
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-stone-300">Transfers</span>
+                <span className="text-stone-50">{formatCurrency(categorySpending.transfers)}</span>
+              </div>
+              <div className="h-2 bg-stone-700 rounded-full overflow-hidden">
+                <div className="h-full bg-purple-500" style={{ width: `${totalCategorySpending > 0 ? (categorySpending.transfers / (totalCategorySpending + categorySpending.transfers)) * 100 : 0}%` }} />
               </div>
             </div>
           </div>
