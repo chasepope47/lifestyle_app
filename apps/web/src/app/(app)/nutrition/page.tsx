@@ -263,6 +263,39 @@ export default function NutritionPage() {
 
   const controlsRef = useRef<{ stop: () => void } | null>(null)
 
+  // Defined before startCamera so the ZXing callback can reference it
+  const searchByBarcode = useCallback(async (barcode: string) => {
+    if (!barcode.trim()) return
+    setBarcodeSearching(true)
+    try {
+      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`)
+      if (!res.ok) throw new Error('Product not found')
+      const data = await res.json()
+      if (data.product) {
+        const product = data.product
+        const food: FoodSearchResult = {
+          fdcId: parseInt(barcode) || 0,
+          description: product.product_name || 'Unknown product',
+          brandOwner: product.brands || null,
+          calories: product.nutriments?.['energy-kcal'] || 0,
+          protein_g: product.nutriments?.proteins || 0,
+          carbs_g: product.nutriments?.carbohydrates || 0,
+          fat_g: product.nutriments?.fat || 0,
+          fiber_g: product.nutriments?.fiber || 0,
+          sodium_mg: (product.nutriments?.salt || 0) * 1000,
+        }
+        setResults([food])
+        setBarcodeInput('')
+      } else {
+        alert('Product not found in barcode database. Try searching by name.')
+      }
+    } catch {
+      alert('Error looking up barcode. Try searching by name instead.')
+    } finally {
+      setBarcodeSearching(false)
+    }
+  }, [])
+
   const stopCamera = useCallback(() => {
     controlsRef.current?.stop()
     controlsRef.current = null
@@ -282,7 +315,8 @@ export default function NutritionPage() {
             controls.stop()
             controlsRef.current = null
             setCameraActive(false)
-            setBarcodeInput(result.getText())
+            setShowBarcode(false)
+            searchByBarcode(result.getText())
           }
         }
       )
@@ -291,7 +325,7 @@ export default function NutritionPage() {
     } catch {
       setCameraError('Camera access denied — check permissions or type the barcode below.')
     }
-  }, [])
+  }, [searchByBarcode])
 
   useEffect(() => {
     if (showBarcode) {
@@ -320,38 +354,6 @@ export default function NutritionPage() {
       setResults(r)
     } finally {
       setSearching(false)
-    }
-  }
-
-  const searchByBarcode = async (barcode: string) => {
-    if (!barcode.trim()) return
-    setBarcodeSearching(true)
-    try {
-      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`)
-      if (!res.ok) throw new Error('Product not found')
-      const data = await res.json()
-      if (data.product) {
-        const product = data.product
-        const food: FoodSearchResult = {
-          fdcId: parseInt(barcode) || 0,
-          description: product.product_name || 'Unknown product',
-          brandOwner: product.brands || null,
-          calories: product.nutriments?.['energy-kcal'] || 0,
-          protein_g: product.nutriments?.proteins || 0,
-          carbs_g: product.nutriments?.carbohydrates || 0,
-          fat_g: product.nutriments?.fat || 0,
-          fiber_g: product.nutriments?.fiber || 0,
-          sodium_mg: (product.nutriments?.salt || 0) * 1000,
-        }
-        setResults([food])
-        setBarcodeInput('')
-      } else {
-        alert('Product not found in database')
-      }
-    } catch {
-      alert('Error scanning barcode. Try searching manually.')
-    } finally {
-      setBarcodeSearching(false)
     }
   }
 
