@@ -1,8 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Plus, Play, Square, Clock, ExternalLink } from 'lucide-react'
+import { Plus, Play, Square, Clock, ExternalLink, Upload } from 'lucide-react'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
+import { useModal } from '@/providers/ModalProvider'
+import { DataImport } from '@/components/DataImport'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@lifestyle/db'
 
@@ -13,6 +15,7 @@ type SessionExercise = Database['public']['Tables']['session_exercises']['Row']
 export default function WorkoutsPage() {
   const { householdId } = useHousehold()
   const { user } = useAuth()
+  const { openModal } = useModal()
   const supabase = createClient()
   const [sessions, setSessions] = useState<WorkoutSession[]>([])
   const [exercises, setExercises] = useState<Exercise[]>([])
@@ -21,6 +24,10 @@ export default function WorkoutsPage() {
   const [selectedExercise, setSelectedExercise] = useState('')
   const [setForm, setSetForm] = useState({ reps: '', weight_kg: '', notes: '' })
   const [loading, setLoading] = useState(true)
+
+  const handleOpenImport = () => {
+    openModal('Import Health Data', <DataImport />)
+  }
 
   useEffect(() => {
     if (!householdId || !user) return
@@ -95,6 +102,13 @@ export default function WorkoutsPage() {
         </div>
         <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">Connect your wearable devices and health data:</p>
         <div className="flex gap-3 flex-wrap">
+          <button
+            onClick={handleOpenImport}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
+          >
+            <Upload className="w-4 h-4" />
+            Import Data
+          </button>
           <a
             href="https://connect.garmin.com"
             target="_blank"

@@ -10,8 +10,12 @@
     "db:generate": "turbo run db:generate"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "turbo": "^2.5.0",
-    "typescript": "^5.7.0",
-    "@types/node": "^22.0.0"
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "xml-js": "^1.6.11"
   }
 }
