@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { Plus, Search, Barcode, X, ChevronLeft, ChevronRight, Trash2, CalendarDays } from 'lucide-react'
+import { BrowserMultiFormatReader } from '@zxing/browser'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
@@ -214,9 +215,6 @@ export default function NutritionPage() {
   const [cameraActive, setCameraActive] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
-  const scanningRef = useRef(false)
-  const detectorRef = useRef<any>(null)
   const [showCalendar, setShowCalendar] = useState(false)
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const d = new Date()
@@ -263,56 +261,37 @@ export default function NutritionPage() {
   const isToday = viewDate === todayISO()
   const displayDate = new Date(viewDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 
+  const controlsRef = useRef<{ stop: () => void } | null>(null)
+
   const stopCamera = useCallback(() => {
-    scanningRef.current = false
-    streamRef.current?.getTracks().forEach(t => t.stop())
-    streamRef.current = null
+    controlsRef.current?.stop()
+    controlsRef.current = null
     if (videoRef.current) videoRef.current.srcObject = null
     setCameraActive(false)
   }, [])
 
-  const scanLoop = useCallback(async () => {
-    if (!scanningRef.current || !videoRef.current) return
-    if (videoRef.current.readyState < 2) {
-      requestAnimationFrame(scanLoop)
-      return
-    }
-    try {
-      const barcodes = await detectorRef.current.detect(videoRef.current)
-      if (barcodes.length > 0) {
-        stopCamera()
-        setBarcodeInput(barcodes[0].rawValue)
-        return
-      }
-    } catch {}
-    if (scanningRef.current) requestAnimationFrame(scanLoop)
-  }, [stopCamera])
-
   const startCamera = useCallback(async () => {
     setCameraError(null)
-    if (!('BarcodeDetector' in window)) {
-      setCameraError('Live scanning not supported in this browser — type the barcode manually below.')
-      return
-    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 } },
-      })
-      streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        await videoRef.current.play()
-      }
-      detectorRef.current = new (window as any).BarcodeDetector({
-        formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code'],
-      })
-      scanningRef.current = true
+      const codeReader = new BrowserMultiFormatReader()
+      const controls = await codeReader.decodeFromConstraints(
+        { video: { facingMode: 'environment' } },
+        videoRef.current!,
+        (result) => {
+          if (result) {
+            controls.stop()
+            controlsRef.current = null
+            setCameraActive(false)
+            setBarcodeInput(result.getText())
+          }
+        }
+      )
+      controlsRef.current = controls
       setCameraActive(true)
-      requestAnimationFrame(scanLoop)
     } catch {
-      setCameraError('Camera access denied. Check permissions or type the barcode below.')
+      setCameraError('Camera access denied — check permissions or type the barcode below.')
     }
-  }, [scanLoop])
+  }, [])
 
   useEffect(() => {
     if (showBarcode) {
