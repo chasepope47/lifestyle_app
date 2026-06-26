@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server'
 import { generateRegistrationOptions } from '@simplewebauthn/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { signChallenge, CHALLENGE_COOKIE, CHALLENGE_COOKIE_OPTIONS } from '@/lib/webauthn/challenge'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+  }
 
-  const admin = createAdminClient()
-
-  // Fetch existing credentials to exclude them (prevents duplicate registration)
-  const { data: existing } = await admin
+  // Fetch existing credentials so the browser excludes already-registered devices
+  const { data: existing } = await supabase
     .from('webauthn_credentials')
     .select('credential_id, transports')
     .eq('user_id', user.id)
@@ -34,13 +34,9 @@ export async function POST(request: Request) {
     },
   })
 
-  // Clean up expired challenges, then store this one
-  await admin.from('webauthn_challenges').delete().lt('expires_at', new Date().toISOString())
-  await admin.from('webauthn_challenges').insert({
-    user_id: user.id,
-    challenge: options.challenge,
-    expires_at: new Date(Date.now() + 5 * 60_000).toISOString(),
-  })
-
-  return NextResponse.json(options)
+  // Store challenge in a signed HTTP-only cookie — no DB table needed
+  const signed = signChallenge(options.challenge)
+  const res = NextResponse.json(options)
+  res.cookies.set(CHALLENGE_COOKIE, signed, CHALLENGE_COOKIE_OPTIONS)
+  return res
 }

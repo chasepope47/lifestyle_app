@@ -1,35 +1,43 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { verifyAuthenticationResponse } from '@simplewebauthn/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { verifyAndExtractChallenge, CHALLENGE_COOKIE, CHALLENGE_COOKIE_OPTIONS } from '@/lib/webauthn/challenge'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // Retrieve and validate the challenge
+  const signed = request.cookies.get(CHALLENGE_COOKIE)?.value
+  if (!signed) {
+    return NextResponse.json({ error: 'No challenge found — please try again' }, { status: 400 })
+  }
+  const challenge = verifyAndExtractChallenge(signed)
+  if (!challenge) {
+    return NextResponse.json({ error: 'Challenge signature invalid' }, { status: 400 })
+  }
+
+  let admin
+  try {
+    admin = createAdminClient()
+  } catch {
+    return NextResponse.json(
+      { error: 'Server not configured for passkey login. Please contact the app owner.' },
+      { status: 500 }
+    )
+  }
+
   const body = await request.json()
-  const admin = createAdminClient()
+  const credentialId: string = body.id
   const origin = new URL(request.url).origin
   const rpID = new URL(request.url).hostname
 
-  const credentialId: string = body.id
-
-  // Look up the stored credential
-  const { data: cred } = await admin
+  // Look up the stored credential by credential_id
+  const { data: cred, error: credError } = await admin
     .from('webauthn_credentials')
     .select('*')
     .eq('credential_id', credentialId)
     .single()
 
-  if (!cred) return NextResponse.json({ error: 'Credential not found' }, { status: 400 })
-
-  // Find the most recent unexpired challenge (user_id is null for login challenges)
-  const { data: challengeRow } = await admin
-    .from('webauthn_challenges')
-    .select('id, challenge, expires_at')
-    .is('user_id', null)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
-
-  if (!challengeRow || new Date(challengeRow.expires_at) < new Date()) {
-    return NextResponse.json({ error: 'Challenge expired or not found' }, { status: 400 })
+  if (credError || !cred) {
+    return NextResponse.json({ error: 'Passkey not recognized on this device' }, { status: 400 })
   }
 
   const publicKeyBytes = Buffer.from(cred.public_key, 'base64')
@@ -38,7 +46,7 @@ export async function POST(request: Request) {
   try {
     verification = await verifyAuthenticationResponse({
       response: body,
-      expectedChallenge: challengeRow.challenge,
+      expectedChallenge: challenge,
       expectedOrigin: origin,
       expectedRPID: rpID,
       credential: {
@@ -49,14 +57,14 @@ export async function POST(request: Request) {
       },
     })
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 400 })
+    return NextResponse.json({ error: `WebAuthn error: ${String(err)}` }, { status: 400 })
   }
 
   if (!verification.verified) {
-    return NextResponse.json({ verified: false }, { status: 401 })
+    return NextResponse.json({ error: 'Passkey verification failed' }, { status: 401 })
   }
 
-  // Update counter and last_used_at
+  // Update counter and last used timestamp
   await admin
     .from('webauthn_credentials')
     .update({
@@ -65,25 +73,28 @@ export async function POST(request: Request) {
     })
     .eq('credential_id', credentialId)
 
-  // Clean up the used challenge
-  await admin.from('webauthn_challenges').delete().eq('id', challengeRow.id)
+  // Get the user's email so we can sign them in
+  const { data: { user }, error: userError } = await admin.auth.admin.getUserById(cred.user_id)
+  if (userError || !user?.email) {
+    return NextResponse.json({ error: 'Could not find user account' }, { status: 500 })
+  }
 
-  // Generate a magic link OTP for the user — admin.generateLink does NOT send an email
-  const { data: { user } } = await admin.auth.admin.getUserById(cred.user_id)
-  if (!user?.email) return NextResponse.json({ error: 'User not found' }, { status: 500 })
-
+  // Generate a magic link OTP — admin.generateLink does NOT send an email
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
     type: 'magiclink',
     email: user.email,
   })
 
   if (linkError || !linkData?.properties?.email_otp) {
-    return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
+    return NextResponse.json({ error: 'Could not create login session' }, { status: 500 })
   }
 
-  return NextResponse.json({
+  const res = NextResponse.json({
     verified: true,
     email: user.email,
     otp: linkData.properties.email_otp,
   })
+  // Clear the challenge cookie
+  res.cookies.set(CHALLENGE_COOKIE, '', { ...CHALLENGE_COOKIE_OPTIONS, maxAge: 0 })
+  return res
 }

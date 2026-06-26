@@ -35,23 +35,20 @@ function LoginPageContent() {
       const { startAuthentication } = await import('@simplewebauthn/browser')
 
       const optionsRes = await fetch('/api/auth/webauthn/login-options', { method: 'POST' })
-      if (!optionsRes.ok) throw new Error('Failed to get passkey options')
-      const options = await optionsRes.json()
+      const optionsData = await optionsRes.json()
+      if (!optionsRes.ok) throw new Error(optionsData.error ?? 'Failed to get passkey options')
 
-      const authentication = await startAuthentication({ optionsJSON: options })
+      const authentication = await startAuthentication({ optionsJSON: optionsData })
 
       const verifyRes = await fetch('/api/auth/webauthn/login-verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(authentication),
       })
+      const verifyData = await verifyRes.json()
+      if (!verifyRes.ok) throw new Error(verifyData.error ?? 'Passkey verification failed')
 
-      if (!verifyRes.ok) {
-        const data = await verifyRes.json()
-        throw new Error(data.error ?? 'Passkey verification failed')
-      }
-
-      const { email: userEmail, otp } = await verifyRes.json()
+      const { email: userEmail, otp } = verifyData
 
       // Exchange the OTP for a Supabase session (no email sent — admin-generated)
       const { error: otpError } = await supabase.auth.verifyOtp({
@@ -103,12 +100,11 @@ function LoginPageContent() {
       const { startRegistration } = await import('@simplewebauthn/browser')
 
       const optionsRes = await fetch('/api/auth/webauthn/register-options', { method: 'POST' })
-      if (!optionsRes.ok) throw new Error('Failed to get registration options')
-      const options = await optionsRes.json()
+      const optionsData = await optionsRes.json()
+      if (!optionsRes.ok) throw new Error(optionsData.error ?? 'Failed to get registration options')
 
-      const registration = await startRegistration({ optionsJSON: options })
+      const registration = await startRegistration({ optionsJSON: optionsData })
 
-      // Include a human-readable device name
       const deviceName = navigator.platform || 'Unknown device'
 
       const verifyRes = await fetch('/api/auth/webauthn/register-verify', {
@@ -116,8 +112,8 @@ function LoginPageContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...registration, deviceName }),
       })
-
-      if (!verifyRes.ok) throw new Error('Failed to register passkey')
+      const verifyData = await verifyRes.json()
+      if (!verifyRes.ok) throw new Error(verifyData.error ?? 'Failed to register passkey')
 
       router.push(params.get('redirectTo') ?? '/dashboard')
     } catch (err: unknown) {
