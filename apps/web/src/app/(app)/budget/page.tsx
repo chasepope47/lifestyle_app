@@ -171,12 +171,53 @@ export default function BudgetPage() {
     return (data?.length ?? 0) > 0
   }
 
+  const parseCSV = (text: string): string[][] => {
+    const rows: string[][] = []
+    let currentRow: string[] = []
+    let currentField = ''
+    let insideQuotes = false
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i]
+      const nextChar = text[i + 1]
+
+      if (char === '"') {
+        if (insideQuotes && nextChar === '"') {
+          currentField += '"'
+          i++
+        } else {
+          insideQuotes = !insideQuotes
+        }
+      } else if (char === ',' && !insideQuotes) {
+        currentRow.push(currentField.trim().replace(/^"|"$/g, ''))
+        currentField = ''
+      } else if ((char === '\n' || char === '\r') && !insideQuotes) {
+        if (currentField || currentRow.length > 0) {
+          currentRow.push(currentField.trim().replace(/^"|"$/g, ''))
+          rows.push(currentRow)
+          currentRow = []
+          currentField = ''
+        }
+        if (char === '\r' && nextChar === '\n') i++
+      } else {
+        currentField += char
+      }
+    }
+
+    if (currentField || currentRow.length > 0) {
+      currentRow.push(currentField.trim().replace(/^"|"$/g, ''))
+      rows.push(currentRow)
+    }
+
+    return rows
+  }
+
   const parseCSVTransactions = async (file: File, accountId: string) => {
     const text = await file.text()
-    const lines = text.split('\n')
-    if (lines.length < 2) throw new Error('CSV file is empty')
+    const rows = parseCSV(text)
+    if (rows.length < 2) throw new Error('CSV file is empty')
 
-    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''))
+    const headers = rows[0]
     const dateIdx = headers.findIndex(h => h === 'Posting Date')
     const amountIdx = headers.findIndex(h => h === 'Amount')
     const descIdx = headers.findIndex(h => h === 'Description')
@@ -186,13 +227,13 @@ export default function BudgetPage() {
     }
 
     const transactions = []
-    for (let i = 1; i < lines.length; i++) {
-      if (!lines[i].trim()) continue
+    for (let i = 1; i < rows.length; i++) {
+      const cols = rows[i]
+      if (cols.length < Math.max(dateIdx, amountIdx, descIdx) + 1) continue
 
-      const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''))
-      const date = cols[dateIdx]
+      const date = cols[dateIdx]?.trim()
       const amount = parseFloat(cols[amountIdx])
-      const description = cols[descIdx]
+      const description = cols[descIdx]?.trim()
 
       if (!date || isNaN(amount) || !description) continue
 
@@ -203,8 +244,8 @@ export default function BudgetPage() {
           amount,
           description,
           transaction_date: date,
-          merchant: cols[headers.findIndex(h => h === 'Extended Description')] || undefined,
-          notes: cols[headers.findIndex(h => h === 'Transaction Category')] || undefined,
+          merchant: cols[headers.findIndex(h => h === 'Extended Description')]?.trim() || undefined,
+          notes: cols[headers.findIndex(h => h === 'Transaction Category')]?.trim() || undefined,
         })
       }
     }
