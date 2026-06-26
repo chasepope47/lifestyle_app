@@ -79,7 +79,7 @@ export default function BudgetPage() {
   const categorySpending = {
     needs: monthTransactions.filter(t => t.category === 'needs' && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
     wants: monthTransactions.filter(t => t.category === 'wants' && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
-    savings: monthTransactions.filter(t => t.category === 'savings' && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
+    savings: monthTransactions.filter(t => t.category === 'savings').reduce((s, t) => s + Math.abs(t.amount), 0),
     transfers: monthTransactions.filter(t => t.category === 'transfers').reduce((s, t) => s + Math.abs(t.amount), 0),
   }
 
