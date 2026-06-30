@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { ExternalLink, Trash2, Plus, Smartphone, Watch } from 'lucide-react'
+import { ExternalLink, KeyRound, Plus, Smartphone, Trash2, Watch } from 'lucide-react'
 import { useAuth } from '@/providers/AuthProvider'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { createClient } from '@/lib/supabase/client'
@@ -8,6 +8,9 @@ import type { Database } from '@lifestyle/db'
 
 type IntegrationToken = Database['public']['Tables']['integration_tokens']['Row']
 type AppShortcut = Database['public']['Tables']['app_shortcuts']['Row']
+type WebAuthnCredential = Database['public']['Tables']['webauthn_credentials']['Row']
+
+const fmtDate = (iso: string | null) => iso ? new Date(iso).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—'
 
 export default function IntegrationsPage() {
   const { user } = useAuth()
@@ -15,6 +18,9 @@ export default function IntegrationsPage() {
   const supabase = createClient()
   const [tokens, setTokens] = useState<IntegrationToken[]>([])
   const [shortcuts, setShortcuts] = useState<AppShortcut[]>([])
+  const [passkeys, setPasskeys] = useState<WebAuthnCredential[]>([])
+  const [passkeyWorking, setPasskeyWorking] = useState(false)
+  const [passkeyError, setPasskeyError] = useState<string | null>(null)
   const [canvasForm, setCanvasForm] = useState({ instanceUrl: '', token: '' })
   const [showCanvasForm, setShowCanvasForm] = useState(false)
   const [shortcutForm, setShortcutForm] = useState({ label: '', url: '', module: '' })
@@ -26,9 +32,11 @@ export default function IntegrationsPage() {
     Promise.all([
       supabase.from('integration_tokens').select('*').eq('user_id', user.id),
       supabase.from('app_shortcuts').select('*').eq('household_id', householdId),
-    ]).then(([{ data: t }, { data: s }]) => {
+      supabase.from('webauthn_credentials').select('*').eq('user_id', user.id).order('created_at', { ascending: true }),
+    ]).then(([{ data: t }, { data: s }, { data: p }]) => {
       setTokens(t ?? [])
       setShortcuts(s ?? [])
+      setPasskeys(p ?? [])
       setLoading(false)
     })
   }, [user, householdId])
@@ -71,6 +79,49 @@ export default function IntegrationsPage() {
   const deleteShortcut = async (id: string) => {
     await supabase.from('app_shortcuts').delete().eq('id', id)
     setShortcuts(prev => prev.filter(s => s.id !== id))
+  }
+
+  const deletePasskey = async (id: string) => {
+    await supabase.from('webauthn_credentials').delete().eq('id', id)
+    setPasskeys(prev => prev.filter(p => p.id !== id))
+    if (passkeys.length <= 1) localStorage.removeItem('passkey_registered')
+  }
+
+  const addPasskey = async () => {
+    if (!user) return
+    setPasskeyWorking(true)
+    setPasskeyError(null)
+    try {
+      const { startRegistration } = await import('@simplewebauthn/browser')
+      const optionsRes = await fetch('/api/auth/webauthn/register-options', { method: 'POST' })
+      if (!optionsRes.ok) { setPasskeyError('Could not start passkey registration'); return }
+      const optionsData = await optionsRes.json()
+      const registration = await startRegistration({ optionsJSON: optionsData })
+      const deviceName = navigator.userAgent.includes('iPhone') ? 'iPhone'
+        : navigator.userAgent.includes('iPad') ? 'iPad'
+        : navigator.userAgent.includes('Mac') ? 'Mac'
+        : navigator.userAgent.includes('Android') ? 'Android'
+        : navigator.platform || 'Unknown device'
+      const verifyRes = await fetch('/api/auth/webauthn/register-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...registration, deviceName }),
+      })
+      if (!verifyRes.ok) {
+        const err = await verifyRes.json()
+        setPasskeyError(err.error ?? 'Registration failed')
+        return
+      }
+      localStorage.setItem('passkey_registered', '1')
+      const { data } = await supabase.from('webauthn_credentials').select('*').eq('user_id', user.id).order('created_at', { ascending: true })
+      setPasskeys(data ?? [])
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== 'NotAllowedError') {
+        setPasskeyError(String(err))
+      }
+    } finally {
+      setPasskeyWorking(false)
+    }
   }
 
   const canvasToken = tokens.find(t => t.provider === 'canvas')
@@ -133,6 +184,61 @@ export default function IntegrationsPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Passkeys */}
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-50">Passkeys</h2>
+            <p className="text-sm text-stone-400 mt-0.5">Sign in with Face ID, fingerprint, or your device PIN — no password needed.</p>
+          </div>
+          <button
+            onClick={addPasskey}
+            disabled={passkeyWorking}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 text-sm font-medium hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus className="w-4 h-4" />
+            {passkeyWorking ? 'Registering…' : 'Add passkey'}
+          </button>
+        </div>
+        {passkeyError && (
+          <div className="mb-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-2.5 text-sm text-red-600 dark:text-red-400">
+            {passkeyError}
+          </div>
+        )}
+        {passkeys.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-stone-300 dark:border-stone-700 p-6 text-center text-stone-400 text-sm">
+            No passkeys registered yet.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {passkeys.map(pk => (
+              <div key={pk.id} className="flex items-center justify-between rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
+                    <KeyRound className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-stone-900 dark:text-stone-50">{pk.device_name ?? 'Unknown device'}</p>
+                    <p className="text-xs text-stone-400">
+                      Added {fmtDate(pk.created_at)}
+                      {pk.last_used_at && <span> · Last used {fmtDate(pk.last_used_at)}</span>}
+                      {pk.backed_up && <span> · Synced</span>}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => deletePasskey(pk.id)}
+                  className="p-1 rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  title="Remove passkey"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Quick Links */}
