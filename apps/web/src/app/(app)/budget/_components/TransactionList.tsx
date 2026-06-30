@@ -3,39 +3,58 @@ import { useState } from 'react'
 import { Search, X, MoreHorizontal, ChevronDown, ChevronUp } from 'lucide-react'
 import { formatCurrency } from '@lifestyle/shared'
 import type { Database } from '@lifestyle/db'
+import type { EnvelopeCategory } from './CategoryEnvelopeGrid'
 
 type Transaction = Database['public']['Tables']['transactions']['Row']
-type FilterTab = 'all' | 'needs' | 'wants' | 'savings' | 'transfers' | 'uncategorized'
 
-const CATEGORY_META = {
-  needs:     { bg: '#60a5fa', label: 'Needs',     pill: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' },
-  wants:     { bg: '#fbbf24', label: 'Wants',     pill: 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30' },
-  savings:   { bg: '#34d399', label: 'Savings',   pill: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30' },
-  transfers: { bg: '#c084fc', label: 'Transfers', pill: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30' },
+interface CatOption {
+  id: string
+  name: string
+  color: string
+  icon?: string | null
 }
 
-const TABS: { key: FilterTab; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'needs', label: 'Needs' },
-  { key: 'wants', label: 'Wants' },
-  { key: 'savings', label: 'Savings' },
-  { key: 'transfers', label: 'Transfers' },
-  { key: 'uncategorized', label: 'Uncategorized' },
+const LEGACY_CATS: CatOption[] = [
+  { id: 'needs',     name: 'Needs',     color: '#60a5fa' },
+  { id: 'wants',     name: 'Wants',     color: '#fbbf24' },
+  { id: 'savings',   name: 'Savings',   color: '#34d399' },
+  { id: 'transfers', name: 'Transfers', color: '#c084fc' },
 ]
 
 interface TransactionListProps {
   transactions: Transaction[]
-  onCategoryChange: (txId: string, category: string) => void
+  envelopeCategories?: EnvelopeCategory[]
+  onCategoryChange: (txId: string, category: string, categoryId?: string) => void
   onReviewClick: () => void
 }
 
-export function TransactionList({ transactions, onCategoryChange, onReviewClick }: TransactionListProps) {
+export function TransactionList({ transactions, envelopeCategories, onCategoryChange, onReviewClick }: TransactionListProps) {
   const [search, setSearch] = useState('')
-  const [activeFilter, setActiveFilter] = useState<FilterTab>('all')
+  const [activeFilter, setActiveFilter] = useState<string>('all')
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
 
   const PAGE_SIZE = 10
+
+  const useEnvelopes = (envelopeCategories?.length ?? 0) > 0
+  const cats: CatOption[] = useEnvelopes
+    ? envelopeCategories!.map(c => ({ id: c.id, name: c.name, color: c.color ?? '#7c3aed', icon: c.icon }))
+    : LEGACY_CATS
+  const catById = new Map(cats.map(c => [c.id, c]))
+
+  // Resolve the category a transaction is shown under: envelope (category_id) takes priority, then legacy text category
+  const catFor = (t: Transaction): CatOption | null => {
+    if (t.category_id && catById.has(t.category_id)) return catById.get(t.category_id)!
+    if (!useEnvelopes && t.category && catById.has(t.category)) return catById.get(t.category)!
+    return null
+  }
+  const isUncategorized = (t: Transaction) => !t.category && !t.category_id
+
+  const TABS: { key: string; label: string }[] = [
+    { key: 'all', label: 'All' },
+    ...cats.map(c => ({ key: c.id, label: c.name })),
+    { key: 'uncategorized', label: 'Uncategorized' },
+  ]
 
   const filtered = transactions.filter(t => {
     const matchSearch = !search ||
@@ -43,13 +62,13 @@ export function TransactionList({ transactions, onCategoryChange, onReviewClick 
       (t.merchant?.toLowerCase().includes(search.toLowerCase()) ?? false)
     const matchFilter =
       activeFilter === 'all' ? true :
-      activeFilter === 'uncategorized' ? !t.category :
-      t.category === activeFilter
+      activeFilter === 'uncategorized' ? isUncategorized(t) :
+      useEnvelopes ? t.category_id === activeFilter : t.category === activeFilter
     return matchSearch && matchFilter
   })
 
   const displayed = expanded ? filtered : filtered.slice(0, PAGE_SIZE)
-  const uncategorizedCount = transactions.filter(t => !t.category).length
+  const uncategorizedCount = transactions.filter(isUncategorized).length
 
   return (
     <div className="rounded-2xl bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 shadow-sm mb-6 overflow-hidden">
@@ -126,9 +145,10 @@ export function TransactionList({ transactions, onCategoryChange, onReviewClick 
           <p className="text-sm text-stone-400 text-center py-8">No transactions match</p>
         ) : (
           displayed.map(tx => {
-            const meta = tx.category ? CATEGORY_META[tx.category as keyof typeof CATEGORY_META] : null
+            const cat = catFor(tx)
             const initials = (tx.description || 'TX').substring(0, 2).toUpperCase()
             const isPositive = tx.amount >= 0
+            const selectedId = tx.category_id ?? tx.category ?? null
 
             return (
               <div
@@ -136,10 +156,10 @@ export function TransactionList({ transactions, onCategoryChange, onReviewClick 
                 className="relative flex items-center gap-3 px-5 py-3 hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors group"
               >
                 {/* Category left accent bar */}
-                {meta && (
+                {cat && (
                   <div
                     className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full"
-                    style={{ backgroundColor: meta.bg }}
+                    style={{ backgroundColor: cat.color }}
                   />
                 )}
 
@@ -147,13 +167,13 @@ export function TransactionList({ transactions, onCategoryChange, onReviewClick 
                 <div
                   className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-xs"
                   style={{
-                    background: meta
-                      ? `linear-gradient(135deg, ${meta.bg}cc, ${meta.bg}88)`
+                    background: cat
+                      ? `linear-gradient(135deg, ${cat.color}cc, ${cat.color}88)`
                       : 'linear-gradient(135deg, #78716c, #57534e)',
-                    boxShadow: meta ? `0 2px 8px ${meta.bg}44` : undefined,
+                    boxShadow: cat ? `0 2px 8px ${cat.color}44` : undefined,
                   }}
                 >
-                  {initials}
+                  {cat?.icon ? <span className="text-base">{cat.icon}</span> : initials}
                 </div>
 
                 {/* Text */}
@@ -163,15 +183,18 @@ export function TransactionList({ transactions, onCategoryChange, onReviewClick 
                     <p className="text-xs text-stone-400">
                       {new Date(tx.transaction_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </p>
-                    {tx.category && meta ? (
-                      <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${meta.pill}`}>
-                        {meta.label}
+                    {cat ? (
+                      <span
+                        className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                        style={{ color: cat.color, backgroundColor: `${cat.color}1a` }}
+                      >
+                        {cat.name}
                       </span>
-                    ) : !tx.category ? (
+                    ) : (
                       <span className="text-xs px-1.5 py-0.5 rounded-full font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20">
                         uncategorized
                       </span>
-                    ) : null}
+                    )}
                   </div>
                 </div>
 
@@ -189,21 +212,30 @@ export function TransactionList({ transactions, onCategoryChange, onReviewClick 
                     <MoreHorizontal className="w-4 h-4 text-stone-400" />
                   </button>
                   {menuOpenId === tx.id && (
-                    <div className="absolute right-0 top-9 z-20 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl shadow-xl p-1.5 min-w-[156px]">
+                    <div className="absolute right-0 top-9 z-20 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-2xl shadow-xl p-1.5 min-w-[156px] max-h-72 overflow-y-auto">
                       <p className="text-xs text-stone-400 px-2.5 py-1.5 font-medium">Set category</p>
-                      {Object.entries(CATEGORY_META).map(([cat, m]) => (
+                      {cats.map(c => (
                         <button
-                          key={cat}
-                          onClick={() => { onCategoryChange(tx.id, cat); setMenuOpenId(null) }}
+                          key={c.id}
+                          onClick={() => {
+                            const categoryValue = useEnvelopes ? c.name : c.id
+                            const categoryId = useEnvelopes ? c.id : undefined
+                            onCategoryChange(tx.id, categoryValue, categoryId)
+                            setMenuOpenId(null)
+                          }}
                           className={`w-full text-left flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm transition-colors ${
-                            tx.category === cat
+                            selectedId === c.id
                               ? 'bg-stone-100 dark:bg-stone-700 text-stone-900 dark:text-stone-50 font-medium'
                               : 'text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700'
                           }`}
                         >
-                          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: m.bg }} />
-                          <span className="capitalize">{cat}</span>
-                          {tx.category === cat && <span className="ml-auto text-xs text-stone-400">✓</span>}
+                          {c.icon ? (
+                            <span className="text-sm flex-shrink-0">{c.icon}</span>
+                          ) : (
+                            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
+                          )}
+                          <span className="truncate">{c.name}</span>
+                          {selectedId === c.id && <span className="ml-auto text-xs text-stone-400">✓</span>}
                         </button>
                       ))}
                     </div>

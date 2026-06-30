@@ -97,9 +97,9 @@ export function ReviewView({ unreviewed, envelopeCategories, onCategorize, onBac
   if (!current) return null
 
   return (
-    <div className="px-3 sm:px-4 py-6 sm:py-8 max-w-2xl mx-auto pb-20">
+    <div className="px-3 sm:px-4 py-4 sm:py-6 max-w-2xl mx-auto pb-20 flex flex-col min-h-[calc(100vh-2rem)]">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-3">
         <button
           onClick={onBack}
           className="p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
@@ -118,13 +118,13 @@ export function ReviewView({ unreviewed, envelopeCategories, onCategorize, onBac
           style={{ width: `${progress}%` }}
         />
       </div>
-      <p className="text-center text-xs text-stone-500 dark:text-stone-400 mb-6">
+      <p className="text-center text-xs text-stone-500 dark:text-stone-400 mb-3">
         {reviewIndex + 1} of {total}
       </p>
 
       {/* Transaction card (swipeable) */}
       <div
-        className="relative rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6 mb-6 touch-none select-none cursor-grab active:cursor-grabbing"
+        className="relative rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-4 sm:p-5 mb-3 touch-none select-none cursor-grab active:cursor-grabbing flex-shrink-0"
         style={{
           transform: `translate(${swipeOffset.x * 0.25}px, ${swipeOffset.y * 0.25}px) rotate(${swipeOffset.x * 0.015}deg)`,
           transition: swipeOffset.x === 0 && swipeOffset.y === 0 ? 'transform 0.25s ease' : 'none',
@@ -143,13 +143,13 @@ export function ReviewView({ unreviewed, envelopeCategories, onCategorize, onBac
           </div>
         )}
 
-        <div className="flex gap-4 mb-4">
-          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex-shrink-0 flex items-center justify-center text-white font-bold text-lg">
+        <div className="flex gap-3 mb-3">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex-shrink-0 flex items-center justify-center text-white font-bold text-base">
             {(current.description || 'TX').substring(0, 2).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-lg font-semibold text-stone-900 dark:text-stone-50 leading-tight">{current.description}</p>
-            <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
+            <p className="text-base font-semibold text-stone-900 dark:text-stone-50 leading-tight truncate">{current.description}</p>
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
               {new Date(current.transaction_date + 'T00:00:00').toLocaleDateString('en-US', {
                 month: 'long', day: 'numeric', year: 'numeric',
               })}
@@ -158,57 +158,58 @@ export function ReviewView({ unreviewed, envelopeCategories, onCategorize, onBac
               <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 truncate">{current.merchant}</p>
             )}
           </div>
+          <p className={`text-xl font-bold flex-shrink-0 ${current.amount >= 0 ? 'text-emerald-500' : 'text-stone-900 dark:text-stone-50'}`}>
+            {current.amount >= 0 ? '+' : ''}{formatCurrency(Math.abs(current.amount))}
+          </p>
         </div>
-
-        <p className={`text-3xl font-bold ${current.amount >= 0 ? 'text-emerald-500' : 'text-stone-900 dark:text-stone-50'}`}>
-          {current.amount >= 0 ? '+' : ''}{formatCurrency(Math.abs(current.amount))}
-        </p>
       </div>
 
       {/* Prev / Next */}
-      <div className="flex items-center justify-between mb-6 gap-2">
+      <div className="flex items-center justify-between mb-3 gap-2 flex-shrink-0">
         <button
           onClick={() => setReviewIndex(i => Math.max(0, i - 1))}
           disabled={reviewIndex === 0}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-medium"
         >
-          <ChevronLeft className="w-4 h-4" /> Prev
+          <ChevronLeft className="w-3.5 h-3.5" /> Prev
         </button>
         <button
           onClick={() => {
             if (reviewIndex < total - 1) setReviewIndex(i => i + 1)
             else onBack()
           }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300 transition-colors text-sm font-medium"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300 transition-colors text-xs font-medium"
         >
-          {reviewIndex < total - 1 ? 'Next' : 'Done'} <ChevronRight className="w-4 h-4" />
+          {reviewIndex < total - 1 ? 'Next' : 'Done'} <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* Category buttons */}
-      <div className="grid grid-cols-2 gap-2.5 mb-4 max-h-72 overflow-y-auto">
+      {/* Category buttons — fills remaining space, no inner scroll */}
+      <div
+        className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2 flex-1 auto-rows-fr"
+      >
         {cats.map(cat => (
           <button
             key={cat.id}
             onClick={() => handleCategorize(cat)}
             disabled={isProcessing}
-            className="flex items-center gap-2.5 px-4 py-3.5 rounded-2xl text-white font-semibold transition-all disabled:opacity-60 active:scale-95 text-sm text-left"
+            className="flex flex-col items-center justify-center gap-1.5 px-2 py-3 rounded-2xl text-white font-semibold transition-all disabled:opacity-60 active:scale-95 text-xs text-center"
             style={{
               background: `linear-gradient(135deg, ${cat.color}dd, ${cat.color}88)`,
               boxShadow: `0 4px 12px ${cat.color}33`,
             }}
           >
             {cat.icon ? (
-              <span className="text-lg leading-none flex-shrink-0">{cat.icon}</span>
+              <span className="text-xl leading-none flex-shrink-0">{cat.icon}</span>
             ) : (
               <span className="w-4 h-4 rounded-full bg-white/30 flex-shrink-0" />
             )}
-            <span className="truncate">{cat.name}</span>
+            <span className="truncate w-full">{cat.name}</span>
           </button>
         ))}
       </div>
 
-      <p className="text-center text-xs text-stone-400 dark:text-stone-600">
+      <p className="text-center text-xs text-stone-400 dark:text-stone-600 flex-shrink-0">
         Swipe the card · first 4 categories mapped to directions
       </p>
     </div>

@@ -188,10 +188,16 @@ export default function BudgetPage() {
     }
   }
 
-  const handleCategoryChange = async (txId: string, category: string) => {
-    const { error } = await supabase.from('transactions').update({ category }).eq('id', txId)
-    if (error) return
-    setTransactions(prev => prev.map(t => t.id === txId ? { ...t, category } : t))
+  const handleCategoryChange = async (txId: string, category: string, categoryId?: string) => {
+    if (categoryId) {
+      const { error } = await supabase.from('transactions').update({ category_id: categoryId }).eq('id', txId)
+      if (error) return
+      setTransactions(prev => prev.map(t => t.id === txId ? { ...t, category_id: categoryId } : t))
+    } else {
+      const { error } = await supabase.from('transactions').update({ category }).eq('id', txId)
+      if (error) return
+      setTransactions(prev => prev.map(t => t.id === txId ? { ...t, category } : t))
+    }
   }
 
   const handleSaveAccount = async (form: AccountForm, editingId?: string) => {
@@ -457,6 +463,7 @@ export default function BudgetPage() {
 
           <TransactionList
             transactions={transactions}
+            envelopeCategories={envelopeCategories}
             onCategoryChange={handleCategoryChange}
             onReviewClick={() => setView('review')}
           />
