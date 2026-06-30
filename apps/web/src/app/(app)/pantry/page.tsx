@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Search, Trash2, ArrowLeft, Barcode, ShoppingCart, PackagePlus } from 'lucide-react'
 import { PageHero } from '@/components/layout/PageHero'
+import { ModulePage } from '@/components/layout/ModulePage'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { createClient } from '@/lib/supabase/client'
 import { getExpirationStatus, expirationBadgeClasses, formatExpirationLabel } from '@lifestyle/shared'
@@ -133,7 +134,7 @@ export default function PantryPage() {
   if (loading) return <div className="p-8 text-stone-400">Loading…</div>
 
   return (
-    <div className="pb-20 lg:pb-10">
+    <ModulePage module="pantry">
       <PageHero
         title="Pantry"
         subtitle="Kitchen inventory & shopping list"
@@ -544,6 +545,6 @@ export default function PantryPage() {
         </div>
       )}
       </div>
-    </div>
+    </ModulePage>
   )
 }

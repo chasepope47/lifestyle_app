@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Play, Square, Clock, ExternalLink, Upload } from 'lucide-react'
 import { PageHero } from '@/components/layout/PageHero'
+import { ModulePage } from '@/components/layout/ModulePage'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
 import { useModal } from '@/providers/ModalProvider'
@@ -81,7 +82,7 @@ export default function WorkoutsPage() {
   if (loading) return <div className="p-8 text-stone-400">Loading…</div>
 
   return (
-    <div className="pb-20 lg:pb-10">
+    <ModulePage module="workouts">
       <PageHero
         title="Workouts"
         subtitle="Log sessions & track progress"
@@ -215,6 +216,6 @@ export default function WorkoutsPage() {
         </div>
       )}
       </div>
-    </div>
+    </ModulePage>
   )
 }

@@ -28,7 +28,13 @@ export function ModalLayoutContent({ children }: { children: React.ReactNode }) 
       >
         <div
           className="h-screen flex flex-col animate-in slide-in-from-right duration-250"
-          style={{ background: 'radial-gradient(ellipse 80% 50% at 100% 0%, color-mix(in srgb, var(--accent) 14%, #130f1c) 0%, #0d0c11 65%)' }}
+          style={{
+            background: [
+              'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)',
+              '#0d0c11',
+            ].join(', '),
+            backgroundSize: '32px 32px, auto',
+          }}
         >
           {/* Modal header */}
           <div
@@ -58,10 +64,7 @@ export function ModalLayoutContent({ children }: { children: React.ReactNode }) 
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main
-        className="flex-1 min-w-0 pb-20 lg:pb-0"
-        style={{ background: 'radial-gradient(ellipse 80% 60% at 0% 0%, color-mix(in srgb, var(--accent) 14%, #130f1c) 0%, #0d0c11 60%)' }}
-      >
+      <main className="flex-1 min-w-0 pb-20 lg:pb-0">
         {children}
       </main>
       <MobileTabBar />

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, RefreshCw } from 'lucide-react'
 import { PageHero } from '@/components/layout/PageHero'
+import { ModulePage } from '@/components/layout/ModulePage'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
@@ -78,7 +79,7 @@ export default function SchoolPage() {
   if (loading) return <div className="p-8 text-stone-400">Loading…</div>
 
   return (
-    <div className="pb-20 lg:pb-10">
+    <ModulePage module="school">
       <PageHero
         title="School"
         subtitle="Assignments, grades & deadlines"
@@ -160,6 +161,6 @@ export default function SchoolPage() {
         </div>
       )}
       </div>
-    </div>
+    </ModulePage>
   )
 }

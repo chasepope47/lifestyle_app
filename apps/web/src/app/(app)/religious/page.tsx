@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Check, Lock, ExternalLink } from 'lucide-react'
 import { PageHero } from '@/components/layout/PageHero'
+import { ModulePage } from '@/components/layout/ModulePage'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
@@ -82,7 +83,7 @@ export default function ReligiousPage() {
   if (loading) return <div className="p-8 text-stone-400">Loading…</div>
 
   return (
-    <div className="pb-20 lg:pb-10">
+    <ModulePage module="religious">
       <PageHero
         title="Faith"
         subtitle="Devotionals, prayer & scripture"
@@ -238,6 +239,6 @@ export default function ReligiousPage() {
         </div>
       )}
       </div>
-    </div>
+    </ModulePage>
   )
 }

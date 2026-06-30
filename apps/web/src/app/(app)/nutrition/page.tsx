@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { Plus, Search, Barcode, X, ChevronLeft, ChevronRight, Trash2, CalendarDays } from 'lucide-react'
 import { PageHero } from '@/components/layout/PageHero'
+import { ModulePage } from '@/components/layout/ModulePage'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
@@ -440,7 +441,7 @@ export default function NutritionPage() {
   if (loading) return <div className="p-8 text-stone-400">Loading…</div>
 
   return (
-    <div className="pb-20 lg:pb-10">
+    <ModulePage module="nutrition">
       <PageHero
         title="Nutrition"
         subtitle="Log food & track macros"
@@ -925,6 +926,6 @@ export default function NutritionPage() {
         </div>
       )}
       </div>
-    </div>
+    </ModulePage>
   )
 }

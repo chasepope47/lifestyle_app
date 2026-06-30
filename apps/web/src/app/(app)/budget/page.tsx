@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Plus } from 'lucide-react'
 import dynamic from 'next/dynamic'
+import { ModulePage } from '@/components/layout/ModulePage'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
@@ -272,34 +273,39 @@ export default function BudgetPage() {
 
   if (loading) {
     return (
-      <div className="px-3 sm:px-4 py-6 sm:py-8 max-w-6xl mx-auto pb-20">
-        <div className="flex items-center justify-between mb-6">
-          <div className="h-8 w-32 rounded-xl bg-stone-200 dark:bg-stone-800 animate-pulse" />
-          <div className="h-10 w-36 rounded-xl bg-stone-200 dark:bg-stone-800 animate-pulse" />
+      <ModulePage module="budget">
+        <div className="px-3 sm:px-4 py-6 sm:py-8 max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <div className="h-8 w-32 rounded-xl bg-stone-200 dark:bg-stone-800 animate-pulse" />
+            <div className="h-10 w-36 rounded-xl bg-stone-200 dark:bg-stone-800 animate-pulse" />
+          </div>
+          <div className="h-64 rounded-3xl bg-violet-900/30 animate-pulse mb-6" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 rounded-2xl bg-stone-100 dark:bg-stone-800 animate-pulse" />
+            ))}
+          </div>
+          <div className="h-52 rounded-2xl bg-stone-800/50 animate-pulse" />
         </div>
-        <div className="h-64 rounded-3xl bg-violet-900/30 animate-pulse mb-6" />
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-24 rounded-2xl bg-stone-100 dark:bg-stone-800 animate-pulse" />
-          ))}
-        </div>
-        <div className="h-52 rounded-2xl bg-stone-800/50 animate-pulse" />
-      </div>
+      </ModulePage>
     )
   }
 
   if (view === 'review' && unreviewed.length > 0) {
     return (
-      <ReviewView
-        unreviewed={unreviewed}
-        onCategorize={handleCategorize}
-        onBack={() => setView('dashboard')}
-      />
+      <ModulePage module="budget">
+        <ReviewView
+          unreviewed={unreviewed}
+          onCategorize={handleCategorize}
+          onBack={() => setView('dashboard')}
+        />
+      </ModulePage>
     )
   }
 
   return (
-    <div className="px-3 sm:px-4 py-6 sm:py-8 max-w-6xl mx-auto pb-20">
+    <ModulePage module="budget">
+    <div className="px-3 sm:px-4 py-6 sm:py-8 max-w-6xl mx-auto">
       {/* Page header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -385,5 +391,6 @@ export default function BudgetPage() {
         />
       )}
     </div>
+    </ModulePage>
   )
 }
