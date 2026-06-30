@@ -1,50 +1,60 @@
 'use client'
 import { useState, useRef } from 'react'
-import { ArrowLeft, ChevronLeft, ChevronRight, Home, ShoppingBag, TrendingUp, ArrowLeftRight } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
 import { formatCurrency } from '@lifestyle/shared'
 import type { Database } from '@lifestyle/db'
+import type { EnvelopeCategory } from './CategoryEnvelopeGrid'
 
 type Transaction = Database['public']['Tables']['transactions']['Row']
 type SwipeDirection = 'up' | 'down' | 'left' | 'right'
-type SwipeConfig = Record<SwipeDirection, string>
 
-const CATEGORY_BUTTONS = [
-  { key: 'needs', label: 'Needs', Icon: Home, bg: 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800' },
-  { key: 'wants', label: 'Wants', Icon: ShoppingBag, bg: 'bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700' },
-  { key: 'savings', label: 'Savings', Icon: TrendingUp, bg: 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800' },
-  { key: 'transfers', label: 'Transfers', Icon: ArrowLeftRight, bg: 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800' },
-] as const
+const SWIPE_DIRS: SwipeDirection[] = ['up', 'down', 'left', 'right']
 
-const SWIPE_LABEL = {
-  needs: { label: 'Needs', color: 'text-blue-400' },
-  wants: { label: 'Wants', color: 'text-yellow-400' },
-  savings: { label: 'Savings', color: 'text-emerald-400' },
-  transfers: { label: 'Transfers', color: 'text-purple-400' },
+interface CatOption {
+  id: string
+  name: string
+  color: string
+  icon?: string | null
 }
+
+const FALLBACK_CATS: CatOption[] = [
+  { id: 'needs',     name: 'Needs',     color: '#2563eb' },
+  { id: 'wants',     name: 'Wants',     color: '#ca8a04' },
+  { id: 'savings',   name: 'Savings',   color: '#059669' },
+  { id: 'transfers', name: 'Transfers', color: '#7c3aed' },
+]
 
 interface ReviewViewProps {
   unreviewed: Transaction[]
-  onCategorize: (txId: string, category: string) => Promise<void>
+  envelopeCategories?: EnvelopeCategory[]
+  onCategorize: (txId: string, category: string, categoryId?: string) => Promise<void>
   onBack: () => void
 }
 
-export function ReviewView({ unreviewed, onCategorize, onBack }: ReviewViewProps) {
+export function ReviewView({ unreviewed, envelopeCategories, onCategorize, onBack }: ReviewViewProps) {
   const [reviewIndex, setReviewIndex] = useState(0)
-  const [swipeConfig] = useState<SwipeConfig>({ up: 'needs', down: 'savings', left: 'wants', right: 'transfers' })
   const [swipeDirection, setSwipeDirection] = useState<SwipeDirection | null>(null)
   const [swipeOffset, setSwipeOffset] = useState({ x: 0, y: 0 })
   const [isProcessing, setIsProcessing] = useState(false)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
 
+  const useEnvelopes = (envelopeCategories?.length ?? 0) > 0
+  const cats: CatOption[] = useEnvelopes
+    ? envelopeCategories!.map(c => ({ id: c.id, name: c.name, color: c.color ?? '#7c3aed', icon: c.icon }))
+    : FALLBACK_CATS
+  const swipeCats = cats.slice(0, 4)
+
   const current = unreviewed[Math.min(reviewIndex, unreviewed.length - 1)]
   const total = unreviewed.length
   const progress = total > 0 ? ((reviewIndex + 1) / total) * 100 : 0
 
-  const handleCategorize = async (category: string) => {
+  const handleCategorize = async (cat: CatOption) => {
     if (!current || isProcessing) return
     setIsProcessing(true)
     try {
-      await onCategorize(current.id, category)
+      const categoryValue = useEnvelopes ? cat.name : cat.id
+      const categoryId = useEnvelopes ? cat.id : undefined
+      await onCategorize(current.id, categoryValue, categoryId)
     } finally {
       setIsProcessing(false)
       setSwipeDirection(null)
@@ -72,18 +82,17 @@ export function ReviewView({ unreviewed, onCategorize, onBack }: ReviewViewProps
     const diffY = e.changedTouches[0].clientY - touchStartRef.current.y
     setSwipeOffset({ x: 0, y: 0 })
     touchStartRef.current = null
-
     if (Math.abs(diffX) < 50 && Math.abs(diffY) < 50) return
-
     const dir: SwipeDirection =
       Math.abs(diffX) > Math.abs(diffY)
         ? diffX > 0 ? 'right' : 'left'
         : diffY > 0 ? 'down' : 'up'
-
     setSwipeDirection(dir)
-    const category = swipeConfig[dir]
-    setTimeout(() => handleCategorize(category), 200)
+    const cat = swipeCats[SWIPE_DIRS.indexOf(dir)]
+    if (cat) setTimeout(() => handleCategorize(cat), 200)
   }
+
+  const swipeLabel = swipeDirection != null ? (swipeCats[SWIPE_DIRS.indexOf(swipeDirection)] ?? null) : null
 
   if (!current) return null
 
@@ -125,9 +134,12 @@ export function ReviewView({ unreviewed, onCategorize, onBack }: ReviewViewProps
         onTouchEnd={handleTouchEnd}
       >
         {/* Swipe overlay label */}
-        {swipeDirection && (
-          <div className={`absolute inset-0 flex items-center justify-center rounded-2xl bg-black/10 dark:bg-white/10 ${SWIPE_LABEL[swipeDirection as keyof typeof SWIPE_LABEL]?.color ?? ''} text-4xl font-black uppercase tracking-widest pointer-events-none`}>
-            {SWIPE_LABEL[swipeDirection as keyof typeof SWIPE_LABEL]?.label}
+        {swipeLabel && (
+          <div
+            className="absolute inset-0 flex items-center justify-center rounded-2xl text-4xl font-black uppercase tracking-widest pointer-events-none"
+            style={{ background: `${swipeLabel.color}22`, color: swipeLabel.color }}
+          >
+            {swipeLabel.icon ? swipeLabel.icon : swipeLabel.name}
           </div>
         )}
 
@@ -174,22 +186,30 @@ export function ReviewView({ unreviewed, onCategorize, onBack }: ReviewViewProps
       </div>
 
       {/* Category buttons */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        {CATEGORY_BUTTONS.map(({ key, label, Icon, bg }) => (
+      <div className="grid grid-cols-2 gap-2.5 mb-4 max-h-72 overflow-y-auto">
+        {cats.map(cat => (
           <button
-            key={key}
-            onClick={() => handleCategorize(key)}
+            key={cat.id}
+            onClick={() => handleCategorize(cat)}
             disabled={isProcessing}
-            className={`flex flex-col items-center gap-2.5 py-5 rounded-2xl ${bg} text-white font-semibold transition-all disabled:opacity-60 active:scale-95`}
+            className="flex items-center gap-2.5 px-4 py-3.5 rounded-2xl text-white font-semibold transition-all disabled:opacity-60 active:scale-95 text-sm text-left"
+            style={{
+              background: `linear-gradient(135deg, ${cat.color}dd, ${cat.color}88)`,
+              boxShadow: `0 4px 12px ${cat.color}33`,
+            }}
           >
-            <Icon className="w-6 h-6" />
-            {label}
+            {cat.icon ? (
+              <span className="text-lg leading-none flex-shrink-0">{cat.icon}</span>
+            ) : (
+              <span className="w-4 h-4 rounded-full bg-white/30 flex-shrink-0" />
+            )}
+            <span className="truncate">{cat.name}</span>
           </button>
         ))}
       </div>
 
       <p className="text-center text-xs text-stone-400 dark:text-stone-600">
-        Swipe the card to categorize quickly
+        Swipe the card · first 4 categories mapped to directions
       </p>
     </div>
   )

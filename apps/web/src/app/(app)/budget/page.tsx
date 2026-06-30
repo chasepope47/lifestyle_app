@@ -174,10 +174,15 @@ export default function BudgetPage() {
   }
 
   // Mutations
-  const handleCategorize = async (txId: string, category: string) => {
-    const { error } = await supabase.from('transactions').update({ category }).eq('id', txId)
+  const handleCategorize = async (txId: string, category: string, categoryId?: string) => {
+    const { error } = await supabase
+      .from('transactions')
+      .update(categoryId ? { category, category_id: categoryId } : { category })
+      .eq('id', txId)
     if (error) throw error
-    setTransactions(prev => prev.map(t => t.id === txId ? { ...t, category } : t))
+    setTransactions(prev => prev.map(t =>
+      t.id === txId ? { ...t, category, ...(categoryId ? { category_id: categoryId } : {}) } : t
+    ))
   }
 
   const handleCategoryChange = async (txId: string, category: string) => {
@@ -382,6 +387,7 @@ export default function BudgetPage() {
       <ModulePage module="budget">
         <ReviewView
           unreviewed={unreviewed}
+          envelopeCategories={envelopeCategories}
           onCategorize={handleCategorize}
           onBack={() => setView('dashboard')}
         />
