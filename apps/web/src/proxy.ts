@@ -41,19 +41,6 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Authenticated users without a household go to setup
-  if (user && !isPublic && !pathname.startsWith('/household/')) {
-    const { data: member } = await supabase
-      .from('household_members')
-      .select('household_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!member) {
-      return NextResponse.redirect(new URL('/household/setup', request.url))
-    }
-  }
-
   return supabaseResponse
 }
 

@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Heart, Users, Plus } from 'lucide-react'
+import { Heart, Users, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { generateInviteCode } from '@lifestyle/shared'
 
@@ -67,9 +67,9 @@ export default function HouseholdSetupPage() {
             <span className="text-xl font-bold text-stone-900 dark:text-stone-50">Together</span>
           </div>
           <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 p-8">
-            <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-50 mb-2">Set up your household</h1>
+            <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-50 mb-2">Connect with a partner</h1>
             <p className="text-sm text-stone-500 dark:text-stone-400 mb-8">
-              Create a new household or join your partner's with an invite code.
+              Share your household with a partner, or skip and use the app solo — you can always connect later.
             </p>
             <div className="flex flex-col gap-3">
               <button
@@ -77,11 +77,11 @@ export default function HouseholdSetupPage() {
                 className="flex items-center gap-3 w-full rounded-xl border-2 border-rose-500 p-4 text-left hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
               >
                 <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
-                  <Plus className="w-5 h-5 text-rose-500" />
+                  <Heart className="w-5 h-5 text-rose-500" />
                 </div>
                 <div>
-                  <div className="font-semibold text-stone-900 dark:text-stone-50">Create a household</div>
-                  <div className="text-sm text-stone-500 dark:text-stone-400">Start fresh and invite your partner</div>
+                  <div className="font-semibold text-stone-900 dark:text-stone-50">Invite my partner</div>
+                  <div className="text-sm text-stone-500 dark:text-stone-400">Generate an invite code to share</div>
                 </div>
               </button>
               <button
@@ -92,9 +92,16 @@ export default function HouseholdSetupPage() {
                   <Users className="w-5 h-5 text-stone-500" />
                 </div>
                 <div>
-                  <div className="font-semibold text-stone-900 dark:text-stone-50">Join a household</div>
-                  <div className="text-sm text-stone-500 dark:text-stone-400">Enter your partner's invite code</div>
+                  <div className="font-semibold text-stone-900 dark:text-stone-50">Join my partner's household</div>
+                  <div className="text-sm text-stone-500 dark:text-stone-400">Enter an invite code they sent you</div>
                 </div>
+              </button>
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="flex items-center justify-center gap-2 w-full rounded-xl border border-stone-200 dark:border-stone-700 p-4 text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors text-sm font-medium"
+              >
+                Skip for now — use solo
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>

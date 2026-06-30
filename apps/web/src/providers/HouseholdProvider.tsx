@@ -1,6 +1,7 @@
 'use client'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { generateInviteCode } from '@lifestyle/shared'
 import type { Database } from '@lifestyle/db'
 import { useAuth } from './AuthProvider'
 
@@ -48,8 +49,36 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
         .single()
 
       if (memberError || !member) {
-        setHousehold(null)
-        setMembers([])
+        // No household yet — create a personal one so all features work immediately.
+        // User can invite a partner from settings whenever they're ready.
+        const displayName =
+          (user.user_metadata?.display_name as string | undefined) ??
+          user.email?.split('@')[0] ??
+          'My'
+        const { data: newHousehold } = await supabase
+          .from('households')
+          .insert({
+            name: `${displayName}'s Space`,
+            invite_code: generateInviteCode(),
+            owner_id: user.id,
+            invite_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+          })
+          .select()
+          .single()
+
+        if (newHousehold) {
+          await supabase.from('household_members').insert({
+            household_id: newHousehold.id,
+            user_id: user.id,
+            role: 'owner',
+            display_name: (user.user_metadata?.display_name as string | undefined) ?? null,
+          })
+          setHousehold(newHousehold)
+          setMembers([])
+        } else {
+          setHousehold(null)
+          setMembers([])
+        }
         setLoading(false)
         return
       }
