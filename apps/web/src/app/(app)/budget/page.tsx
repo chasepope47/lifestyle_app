@@ -15,6 +15,7 @@ import { AccountsPanel } from './_components/AccountsPanel'
 import { CategoryEnvelopeGrid, type EnvelopeCategory } from './_components/CategoryEnvelopeGrid'
 import { TransactionList } from './_components/TransactionList'
 import { QuickAddTransaction } from './_components/QuickAddTransaction'
+import type { DonutSlice } from './_components/SpendingDonut'
 
 const SpendingDonut = dynamic(
   () => import('./_components/SpendingDonut').then(m => ({ default: m.SpendingDonut })),
@@ -157,6 +158,14 @@ export default function BudgetPage() {
     savings,
     transfers: transactions.filter(t => t.category === 'transfers').reduce((s, t) => s + Math.abs(t.amount), 0),
   }
+  const donutData: DonutSlice[] = envelopeCategories.length > 0
+    ? envelopeCategories.map(c => ({ key: c.id, label: c.name, color: c.color ?? '#7c3aed', value: c.spent }))
+    : [
+        { key: 'needs',     label: 'Needs',     color: '#60a5fa', value: categorySpending.needs },
+        { key: 'wants',     label: 'Wants',     color: '#fbbf24', value: categorySpending.wants },
+        { key: 'savings',   label: 'Savings',   color: '#34d399', value: categorySpending.savings },
+        { key: 'transfers', label: 'Transfers', color: '#c084fc', value: categorySpending.transfers },
+      ]
   const monthLabel = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
   const resetMonthTransactions = async () => {
@@ -471,12 +480,7 @@ export default function BudgetPage() {
 
         {/* Right column (1/3) */}
         <div className="space-y-6">
-          <SpendingDonut
-            needs={categorySpending.needs}
-            wants={categorySpending.wants}
-            savings={categorySpending.savings}
-            transfers={categorySpending.transfers}
-          />
+          <SpendingDonut data={donutData} />
 
           <CategoryEnvelopeGrid
             categories={envelopeCategories}

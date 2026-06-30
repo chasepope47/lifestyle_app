@@ -109,7 +109,7 @@ export function TransactionList({ transactions, envelopeCategories, onCategoryCh
         </div>
 
         {/* Filter tabs */}
-        <div className="flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex flex-wrap gap-1.5">
           {TABS.map(tab => {
             const isActive = activeFilter === tab.key
             const count = tab.key === 'uncategorized' ? uncategorizedCount : undefined

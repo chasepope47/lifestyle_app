@@ -2,19 +2,16 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { formatCurrency } from '@lifestyle/shared'
 
-interface SpendingDonutProps {
-  needs: number
-  wants: number
-  savings: number
-  transfers: number
+export interface DonutSlice {
+  key: string
+  label: string
+  color: string
+  value: number
 }
 
-const SLICES = [
-  { key: 'needs',     label: 'Needs',     color: '#60a5fa' },
-  { key: 'wants',     label: 'Wants',     color: '#fbbf24' },
-  { key: 'savings',   label: 'Savings',   color: '#34d399' },
-  { key: 'transfers', label: 'Transfers', color: '#c084fc' },
-]
+interface SpendingDonutProps {
+  data: DonutSlice[]
+}
 
 const TOOLTIP_STYLE = {
   backgroundColor: '#0c0a09',
@@ -25,9 +22,8 @@ const TOOLTIP_STYLE = {
   boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
 }
 
-export function SpendingDonut({ needs, wants, savings, transfers }: SpendingDonutProps) {
-  const values: Record<string, number> = { needs, wants, savings, transfers }
-  const data = SLICES.map(s => ({ ...s, value: values[s.key] })).filter(s => s.value > 0)
+export function SpendingDonut({ data: rawData }: SpendingDonutProps) {
+  const data = rawData.filter(s => s.value > 0)
   const total = data.reduce((s, d) => s + d.value, 0)
 
   return (
@@ -73,10 +69,8 @@ export function SpendingDonut({ needs, wants, savings, transfers }: SpendingDonu
             </div>
 
             <div className="w-full space-y-2">
-              {SLICES.map(({ key, label, color }) => {
-                const val = values[key]
-                if (val <= 0) return null
-                const pct = total > 0 ? (val / total) * 100 : 0
+              {data.map(({ key, label, color, value }) => {
+                const pct = total > 0 ? (value / total) * 100 : 0
                 return (
                   <div key={key}>
                     <div className="flex items-center justify-between mb-1">
@@ -86,7 +80,7 @@ export function SpendingDonut({ needs, wants, savings, transfers }: SpendingDonu
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-stone-500">{pct.toFixed(0)}%</span>
-                        <span className="text-xs font-semibold text-stone-200">{formatCurrency(val)}</span>
+                        <span className="text-xs font-semibold text-stone-200">{formatCurrency(value)}</span>
                       </div>
                     </div>
                     <div className="h-1 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}>
