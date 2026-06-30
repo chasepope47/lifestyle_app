@@ -270,6 +270,51 @@ export interface Database {
         }
         Relationships: []
       }
+      budget_goals: {
+        Row: {
+          id: string
+          household_id: string
+          category_id: string | null
+          name: string
+          goal_type: 'savings' | 'spending_limit' | 'debt_payoff'
+          target_amount: number
+          current_amount: number
+          target_date: string | null
+          notes: string | null
+          created_by: string
+          created_at: string
+          achieved_at: string | null
+        }
+        Insert: {
+          id?: string
+          household_id: string
+          category_id?: string | null
+          name: string
+          goal_type: 'savings' | 'spending_limit' | 'debt_payoff'
+          target_amount: number
+          current_amount?: number
+          target_date?: string | null
+          notes?: string | null
+          created_by: string
+          created_at?: string
+          achieved_at?: string | null
+        }
+        Update: {
+          id?: string
+          household_id?: string
+          category_id?: string | null
+          name?: string
+          goal_type?: 'savings' | 'spending_limit' | 'debt_payoff'
+          target_amount?: number
+          current_amount?: number
+          target_date?: string | null
+          notes?: string | null
+          created_by?: string
+          created_at?: string
+          achieved_at?: string | null
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           id: string

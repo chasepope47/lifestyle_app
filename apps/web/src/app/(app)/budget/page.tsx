@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { Plus, RotateCcw } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { ModulePage } from '@/components/layout/ModulePage'
@@ -15,6 +15,7 @@ import { AccountsPanel } from './_components/AccountsPanel'
 import { CategoryEnvelopeGrid, type EnvelopeCategory } from './_components/CategoryEnvelopeGrid'
 import { TransactionList } from './_components/TransactionList'
 import { QuickAddTransaction } from './_components/QuickAddTransaction'
+import { BudgetAssistant } from './_components/BudgetAssistant'
 import type { DonutSlice } from './_components/SpendingDonut'
 
 const SpendingDonut = dynamic(
@@ -100,8 +101,8 @@ export default function BudgetPage() {
       })
   }, [householdId])
 
-  // Fetch month-scoped transactions + envelope spending on month change
-  useEffect(() => {
+  // Fetch month-scoped transactions + envelope spending
+  const refetchMonthData = useCallback(() => {
     if (!householdId) return
     setLoading(true)
     const { startDate, endDate } = monthBounds(currentMonth)
@@ -146,6 +147,11 @@ export default function BudgetPage() {
       setLoading(false)
     })
   }, [householdId, currentMonth])
+
+  // Re-fetch on month change
+  useEffect(() => {
+    refetchMonthData()
+  }, [refetchMonthData])
 
   // Derived values
   const unreviewed = transactions.filter(t => !t.category && !t.category_id)
@@ -584,6 +590,10 @@ export default function BudgetPage() {
           }}
           onClose={() => setShowQuickAdd(false)}
         />
+      )}
+
+      {householdId && (
+        <BudgetAssistant householdId={householdId} onDataChanged={refetchMonthData} />
       )}
     </div>
     </ModulePage>
