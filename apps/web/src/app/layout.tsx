@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${geist.variable} h-full`}>
-      <body className="font-sans antialiased min-h-full bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-50">
+      <body className="font-sans antialiased min-h-full bg-stone-50 text-stone-900 dark:bg-[#0d0c11] dark:text-stone-50">
         <ThemeProvider>
           <AuthProvider>
             <HouseholdProvider>

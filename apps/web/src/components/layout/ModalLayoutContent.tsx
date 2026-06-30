@@ -11,21 +11,40 @@ export function ModalLayoutContent({ children }: { children: React.ReactNode }) 
   const isModal = searchParams.get('modal') === 'true'
 
   const handleClose = () => {
-    router.push(pathname)
+    // Go back to the previous page in history rather than pushing the same
+    // pathname (which would keep the user on the current page without modal)
+    if (window.history.length > 1) {
+      router.back()
+    } else {
+      router.push('/dashboard')
+    }
   }
 
   if (isModal) {
     return (
-      <div className="fixed inset-0 z-50 bg-stone-900/50 dark:bg-stone-950/50 animate-in fade-in duration-300">
-        <div className="h-screen flex flex-col bg-white dark:bg-stone-900 animate-in slide-in-from-right duration-300">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 dark:border-stone-800">
-            <h1 className="text-xl font-bold text-stone-900 dark:text-stone-50">Page</h1>
+      <div
+        className="fixed inset-0 z-50 animate-in fade-in duration-200"
+        style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+      >
+        <div
+          className="h-screen flex flex-col animate-in slide-in-from-right duration-250"
+          style={{ background: 'radial-gradient(ellipse 80% 50% at 100% 0%, color-mix(in srgb, var(--accent) 14%, #130f1c) 0%, #0d0c11 65%)' }}
+        >
+          {/* Modal header */}
+          <div
+            className="flex items-center justify-between px-5 py-4 flex-shrink-0"
+            style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+          >
+            <span className="text-base font-semibold text-white/80 capitalize">
+              {pathname.replace('/', '') || 'Page'}
+            </span>
             <button
               onClick={handleClose}
-              className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-full transition-colors"
+              style={{ background: 'rgba(255,255,255,0.08)' }}
               aria-label="Close"
             >
-              <X className="w-5 h-5 text-stone-600 dark:text-stone-400" />
+              <X className="w-4 h-4 text-white/60" />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -39,7 +58,10 @@ export function ModalLayoutContent({ children }: { children: React.ReactNode }) 
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 min-w-0 pb-20 lg:pb-0">
+      <main
+        className="flex-1 min-w-0 pb-20 lg:pb-0"
+        style={{ background: 'radial-gradient(ellipse 80% 60% at 0% 0%, color-mix(in srgb, var(--accent) 14%, #130f1c) 0%, #0d0c11 60%)' }}
+      >
         {children}
       </main>
       <MobileTabBar />
