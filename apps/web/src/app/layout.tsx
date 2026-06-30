@@ -4,6 +4,7 @@ import './globals.css'
 import { AuthProvider } from '@/providers/AuthProvider'
 import { HouseholdProvider } from '@/providers/HouseholdProvider'
 import { ModalProvider } from '@/providers/ModalProvider'
+import { ThemeProvider } from '@/providers/ThemeProvider'
 
 export const viewport: Viewport = {
   themeColor: '#1c1917',
@@ -32,13 +33,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning className={`${geist.variable} h-full`}>
       <body className="font-sans antialiased min-h-full bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-50">
-        <AuthProvider>
-          <HouseholdProvider>
-            <ModalProvider>
-              {children}
-            </ModalProvider>
-          </HouseholdProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <HouseholdProvider>
+              <ModalProvider>
+                {children}
+              </ModalProvider>
+            </HouseholdProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

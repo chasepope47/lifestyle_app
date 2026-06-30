@@ -34,14 +34,14 @@ export default function DashboardPage() {
       {/* Hero banner */}
       <div
         className="px-5 pt-10 pb-8 mb-6 relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #1a0533 0%, #2e0a52 35%, #1a0a2e 65%, #0d0c11 100%)' }}
+        style={{ background: 'var(--hero-gradient)' }}
       >
         {/* Ambient glow orbs */}
-        <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full opacity-20 pointer-events-none" style={{ background: 'radial-gradient(circle, #a78bfa, transparent 70%)' }} />
-        <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full opacity-15 pointer-events-none" style={{ background: 'radial-gradient(circle, #ec4899, transparent 70%)' }} />
+        <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full opacity-20 pointer-events-none" style={{ background: 'radial-gradient(circle, var(--accent), transparent 70%)' }} />
+        <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full opacity-15 pointer-events-none" style={{ background: 'radial-gradient(circle, var(--accent2), transparent 70%)' }} />
 
         <div className="relative">
-          <p className="text-sm font-medium mb-1" style={{ color: 'rgba(167,139,250,0.7)' }}>
+          <p className="text-sm font-medium mb-1" style={{ color: 'color-mix(in srgb, var(--accent) 70%, transparent)' }}>
             {greeting()}
           </p>
           <h1 className="text-2xl font-bold text-white mb-3">

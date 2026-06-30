@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { Apple, BookOpen, GraduationCap, BookHeart, Settings, LogOut, X, Heart } from 'lucide-react'
 import { useAuth } from '@/providers/AuthProvider'
+import { ThemePicker } from '@/components/ThemePicker'
 
 const MORE_ITEMS = [
   { href: '/nutrition', icon: Apple,        label: 'Nutrition', desc: 'Food & macros',           color: '#34d399' },
@@ -39,7 +40,7 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
           <div className="flex items-center gap-2.5">
             <div
               className="w-7 h-7 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #7c3aed, #ec4899)' }}
+              style={{ background: 'var(--brand-gradient)' }}
             >
               <Heart className="w-3.5 h-3.5 text-white" />
             </div>
@@ -94,6 +95,15 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
               <p className="text-xs" style={{ color: 'rgba(255,255,255,0.32)' }}>Connected services</p>
             </div>
           </Link>
+
+          {/* Theme picker */}
+          <div
+            className="flex items-center justify-between px-4 py-3 rounded-xl mb-2"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+          >
+            <span className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>Accent theme</span>
+            <ThemePicker compact />
+          </div>
 
           {/* Sign out */}
           <button

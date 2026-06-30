@@ -3,6 +3,13 @@
 :root {
   --background: #f8f7f5;
   --foreground: #171717;
+
+  /* Default accent theme (violet) — overwritten at runtime by ThemeProvider */
+  --accent: #7c3aed;
+  --accent2: #ec4899;
+  --brand-gradient: linear-gradient(135deg, #7c3aed, #ec4899);
+  --hero-gradient: linear-gradient(135deg, #1a0533 0%, #2e0a52 35%, #1a0a2e 65%, #0d0c11 100%);
+  --stripe-gradient: linear-gradient(to bottom, transparent, rgba(124,58,237,0.4) 30%, rgba(236,72,153,0.3) 70%, transparent);
 }
 
 @theme inline {

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/providers/AuthProvider'
 import { useHousehold } from '@/providers/HouseholdProvider'
+import { ThemePicker } from '@/components/ThemePicker'
 
 const NAV = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', color: '#a78bfa' },
@@ -36,10 +37,7 @@ function NavItem({ href, icon: Icon, label, color, active }: (typeof NAV)[0] & {
           : { backgroundColor: 'rgba(255,255,255,0.05)' }
         }
       >
-        <Icon
-          className="w-3.5 h-3.5 transition-colors"
-          style={active ? { color } : {}}
-        />
+        <Icon className="w-3.5 h-3.5" style={active ? { color } : {}} />
       </div>
       <span className={`flex-1 transition-colors ${active ? '' : 'group-hover:text-white/80'}`}>{label}</span>
       {active && (
@@ -59,14 +57,14 @@ export function Sidebar() {
       className="hidden lg:flex flex-col w-64 min-h-screen sticky top-0 h-screen overflow-hidden"
       style={{ background: '#0d0c11', borderRight: '1px solid rgba(255,255,255,0.06)' }}
     >
-      {/* Left gradient accent stripe */}
-      <div className="absolute left-0 top-0 bottom-0 w-px" style={{ background: 'linear-gradient(to bottom, transparent, rgba(124,58,237,0.4) 30%, rgba(236,72,153,0.3) 70%, transparent)' }} />
+      {/* Left gradient accent stripe — driven by --stripe-gradient CSS var */}
+      <div className="absolute left-0 top-0 bottom-0 w-px" style={{ background: 'var(--stripe-gradient)' }} />
 
       {/* Brand */}
       <div className="flex items-center gap-3 px-5 py-5 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div
           className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg"
-          style={{ background: 'linear-gradient(135deg, #7c3aed, #ec4899)' }}
+          style={{ background: 'var(--brand-gradient)' }}
         >
           <Heart className="w-4 h-4 text-white" />
         </div>
@@ -106,8 +104,14 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Bottom */}
-      <div className="px-3 py-4 flex-shrink-0 space-y-0.5" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      {/* Theme picker */}
+      <div className="px-5 py-3 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <p className="text-[10px] font-medium mb-2" style={{ color: 'rgba(255,255,255,0.25)' }}>THEME</p>
+        <ThemePicker compact />
+      </div>
+
+      {/* Bottom actions */}
+      <div className="px-3 pb-4 flex-shrink-0 space-y-0.5">
         <Link
           href="/settings/integrations"
           className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
