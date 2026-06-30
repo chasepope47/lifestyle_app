@@ -1,17 +1,18 @@
 'use client'
-import { Landmark, ShoppingBasket, Leaf, Mountain, BookOpen, GraduationCap, Sun } from 'lucide-react'
+import { Landmark, ShoppingBasket, Leaf, Mountain, BookOpen, GraduationCap, Sun, LayoutDashboard } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-export type ModuleKey = 'budget' | 'pantry' | 'nutrition' | 'workouts' | 'journal' | 'school' | 'religious'
+export type ModuleKey = 'dashboard' | 'budget' | 'pantry' | 'nutrition' | 'workouts' | 'journal' | 'school' | 'religious'
 
 const MODULES: Record<ModuleKey, { accentRgb: string; Icon: LucideIcon; bgImage: string }> = {
-  budget:    { accentRgb: '124,58,237',  Icon: Landmark,       bgImage: '/images/modules/budget.jpg'    },
-  pantry:    { accentRgb: '251,191,36',  Icon: ShoppingBasket, bgImage: '/images/modules/pantry.jpg'    },
-  nutrition: { accentRgb: '52,211,153',  Icon: Leaf,           bgImage: '/images/modules/nutrition.jpg' },
-  workouts:  { accentRgb: '96,165,250',  Icon: Mountain,       bgImage: '/images/modules/workouts.jpg'  },
-  journal:   { accentRgb: '244,114,182', Icon: BookOpen,       bgImage: '/images/modules/journal.jpg'   },
-  school:    { accentRgb: '251,146,60',  Icon: GraduationCap,  bgImage: '/images/modules/school.jpg'    },
-  religious: { accentRgb: '45,212,191',  Icon: Sun,            bgImage: '/images/modules/religious.jpg' },
+  dashboard: { accentRgb: '139,92,246',  Icon: LayoutDashboard, bgImage: '/images/modules/dashboard.jpg' },
+  budget:    { accentRgb: '124,58,237',  Icon: Landmark,        bgImage: '/images/modules/budget.jpg'    },
+  pantry:    { accentRgb: '251,191,36',  Icon: ShoppingBasket,  bgImage: '/images/modules/pantry.jpg'    },
+  nutrition: { accentRgb: '52,211,153',  Icon: Leaf,            bgImage: '/images/modules/nutrition.jpg' },
+  workouts:  { accentRgb: '96,165,250',  Icon: Mountain,        bgImage: '/images/modules/workouts.jpg'  },
+  journal:   { accentRgb: '244,114,182', Icon: BookOpen,        bgImage: '/images/modules/journal.jpg'   },
+  school:    { accentRgb: '251,146,60',  Icon: GraduationCap,   bgImage: '/images/modules/school.jpg'    },
+  religious: { accentRgb: '45,212,191',  Icon: Sun,             bgImage: '/images/modules/religious.jpg' },
 }
 
 export function ModulePage({ module, children }: { module: ModuleKey; children: React.ReactNode }) {

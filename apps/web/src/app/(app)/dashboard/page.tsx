@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
+import { ModulePage } from '@/components/layout/ModulePage'
 
 const MODULES = [
   { href: '/budget',    icon: Wallet,        label: 'Budget',    desc: 'Track income & expenses',     hex: '#a78bfa', glow: 'rgba(167,139,250,0.15)' },
@@ -30,11 +31,11 @@ export default function DashboardPage() {
   const displayName = user?.user_metadata?.display_name ?? 'there'
 
   return (
-    <div className="pb-20 lg:pb-10">
+    <ModulePage module="dashboard">
       {/* Hero banner */}
       <div
         className="px-5 pt-10 pb-8 mb-6 relative overflow-hidden"
-        style={{ background: 'var(--hero-gradient)' }}
+        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 70%, transparent 100%)' }}
       >
         {/* Ambient glow orbs */}
         <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full opacity-20 pointer-events-none" style={{ background: 'radial-gradient(circle, var(--accent), transparent 70%)' }} />
@@ -144,6 +145,6 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
-    </div>
+    </ModulePage>
   )
 }
