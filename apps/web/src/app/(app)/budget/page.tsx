@@ -273,13 +273,17 @@ export default function BudgetPage() {
   if (loading) {
     return (
       <div className="px-3 sm:px-4 py-6 sm:py-8 max-w-6xl mx-auto pb-20">
-        <div className="h-48 rounded-2xl bg-stone-100 dark:bg-stone-800 animate-pulse mb-6" />
+        <div className="flex items-center justify-between mb-6">
+          <div className="h-8 w-32 rounded-xl bg-stone-200 dark:bg-stone-800 animate-pulse" />
+          <div className="h-10 w-36 rounded-xl bg-stone-200 dark:bg-stone-800 animate-pulse" />
+        </div>
+        <div className="h-64 rounded-3xl bg-violet-900/30 animate-pulse mb-6" />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-20 rounded-2xl bg-stone-100 dark:bg-stone-800 animate-pulse" />
+            <div key={i} className="h-24 rounded-2xl bg-stone-100 dark:bg-stone-800 animate-pulse" />
           ))}
         </div>
-        <div className="h-52 rounded-2xl bg-stone-100 dark:bg-stone-800 animate-pulse" />
+        <div className="h-52 rounded-2xl bg-stone-800/50 animate-pulse" />
       </div>
     )
   }
@@ -298,10 +302,14 @@ export default function BudgetPage() {
     <div className="px-3 sm:px-4 py-6 sm:py-8 max-w-6xl mx-auto pb-20">
       {/* Page header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-50">Budget</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-50">Budget</h1>
+          <p className="text-xs text-stone-400 mt-0.5">Track, review &amp; plan your spending</p>
+        </div>
         <button
           onClick={() => setShowQuickAdd(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-all shadow-sm hover:shadow-md active:scale-95"
+          style={{ boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}
         >
           <Plus className="w-4 h-4" /> Add Transaction
         </button>

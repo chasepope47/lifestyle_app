@@ -16,34 +16,31 @@ export function MonthSelector({ currentMonth, onPrev, onNext }: MonthSelectorPro
   const monthLabel = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
   return (
-    <div className="flex items-center justify-center gap-4 mb-6">
+    <div className="flex items-center justify-center gap-3 mb-6">
       <button
         onClick={onPrev}
-        className="p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+        className="w-9 h-9 flex items-center justify-center rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-800 transition-all hover:shadow"
         aria-label="Previous month"
       >
-        <ChevronLeft className="w-5 h-5 text-stone-500 dark:text-stone-400" />
+        <ChevronLeft className="w-4 h-4 text-stone-500 dark:text-stone-400" />
       </button>
 
-      <div className="flex items-center gap-2">
-        <h2 className="text-xl font-bold text-stone-900 dark:text-stone-50">{monthLabel}</h2>
+      <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 shadow-sm">
+        <h2 className="text-base font-semibold text-stone-900 dark:text-stone-50">{monthLabel}</h2>
         {!isCurrentMonth && (
-          <button
-            onClick={() => {/* handled by parent */}}
-            className="text-xs text-violet-500 dark:text-violet-400 font-medium hover:text-violet-600 dark:hover:text-violet-300"
-          >
-            (not current)
-          </button>
+          <span className="text-xs text-violet-500 dark:text-violet-400 font-medium bg-violet-50 dark:bg-violet-900/20 px-1.5 py-0.5 rounded-full">
+            past
+          </span>
         )}
       </div>
 
       <button
         onClick={onNext}
         disabled={isCurrentMonth}
-        className="p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        className="w-9 h-9 flex items-center justify-center rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-800 transition-all hover:shadow disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:shadow-sm"
         aria-label="Next month"
       >
-        <ChevronRight className="w-5 h-5 text-stone-500 dark:text-stone-400" />
+        <ChevronRight className="w-4 h-4 text-stone-500 dark:text-stone-400" />
       </button>
     </div>
   )

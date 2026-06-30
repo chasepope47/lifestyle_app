@@ -16,11 +16,11 @@ interface CategoryEnvelopeGridProps {
   onAddCategory?: () => void
 }
 
-function getProgressColor(pct: number): string {
-  if (pct >= 100) return '#ef4444'
-  if (pct >= 90) return '#f97316'
-  if (pct >= 75) return '#eab308'
-  return '#22c55e'
+function getBarColor(pct: number): string {
+  if (pct >= 100) return '#f87171'
+  if (pct >= 90)  return '#fb923c'
+  if (pct >= 75)  return '#fbbf24'
+  return '#34d399'
 }
 
 function EnvelopeCard({ cat }: { cat: EnvelopeCategory }) {
@@ -28,48 +28,48 @@ function EnvelopeCard({ cat }: { cat: EnvelopeCategory }) {
   const pct = hasLimit ? Math.min(110, (cat.spent / cat.monthly_limit!) * 100) : 0
   const remaining = hasLimit ? cat.monthly_limit! - cat.spent : 0
   const isOver = hasLimit && cat.spent > cat.monthly_limit!
-  const progressColor = getProgressColor(pct)
+  const barColor = getBarColor(pct)
 
-  // Use category color as hex for inline style (with opacity for bg)
   const accentColor = cat.color && cat.color.startsWith('#') ? cat.color : '#7c3aed'
-  const bgStyle = { backgroundColor: accentColor + '22' }
-  const iconStyle = { color: accentColor }
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-4">
+    <div className="relative rounded-2xl p-4 overflow-hidden bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 shadow-sm hover:shadow-md transition-shadow">
+      {/* Color accent strip at top */}
+      <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl" style={{ backgroundColor: accentColor }} />
+
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-base"
-            style={bgStyle}
+            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-base"
+            style={{ backgroundColor: accentColor + '22' }}
           >
             {cat.icon ? (
-              <span style={iconStyle}>{cat.icon}</span>
+              <span>{cat.icon}</span>
             ) : (
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: accentColor }} />
             )}
           </div>
           <p className="text-sm font-semibold text-stone-900 dark:text-stone-50 truncate">{cat.name}</p>
         </div>
-        <p className="text-sm font-bold text-stone-900 dark:text-stone-50 flex-shrink-0 ml-2">
+        <p className="text-sm font-bold text-stone-900 dark:text-stone-50 ml-2 flex-shrink-0">
           {formatCurrency(cat.spent)}
         </p>
       </div>
 
       {hasLimit ? (
         <>
-          <div className="h-1.5 bg-stone-100 dark:bg-stone-800 rounded-full overflow-hidden mb-1.5">
+          <div className="h-1.5 rounded-full mb-1.5 bg-stone-100 dark:bg-stone-800">
             <div
               className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(100, pct)}%`, backgroundColor: progressColor }}
+              style={{ width: `${Math.min(100, pct)}%`, backgroundColor: barColor, boxShadow: `0 0 6px ${barColor}66` }}
             />
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-stone-500">{pct.toFixed(0)}% used</span>
+            <span className="text-stone-400">{pct.toFixed(0)}% of {formatCurrency(cat.monthly_limit!)}</span>
             {isOver ? (
-              <span className="text-red-500 font-medium">{formatCurrency(Math.abs(remaining))} over</span>
+              <span className="font-semibold" style={{ color: '#f87171' }}>{formatCurrency(Math.abs(remaining))} over</span>
             ) : (
-              <span className="text-stone-500">{formatCurrency(remaining)} left</span>
+              <span className="text-stone-400">{formatCurrency(remaining)} left</span>
             )}
           </div>
         </>
@@ -82,13 +82,18 @@ function EnvelopeCard({ cat }: { cat: EnvelopeCategory }) {
 
 export function CategoryEnvelopeGrid({ categories, onAddCategory }: CategoryEnvelopeGridProps) {
   return (
-    <div className="rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6">
+    <div className="rounded-2xl bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-50">Budget Categories</h3>
+        <div>
+          <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-50">Budget Envelopes</h3>
+          {categories.length > 0 && (
+            <p className="text-xs text-stone-400 mt-0.5">{categories.length} categor{categories.length === 1 ? 'y' : 'ies'}</p>
+          )}
+        </div>
         {onAddCategory && (
           <button
             onClick={onAddCategory}
-            className="flex items-center gap-1 text-xs text-violet-600 dark:text-violet-400 font-medium hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+            className="flex items-center gap-1 text-xs text-violet-600 dark:text-violet-400 font-medium hover:text-violet-700 dark:hover:text-violet-300"
           >
             <Plus className="w-3.5 h-3.5" /> Add
           </button>
@@ -97,25 +102,23 @@ export function CategoryEnvelopeGrid({ categories, onAddCategory }: CategoryEnve
 
       {categories.length === 0 ? (
         <div className="text-center py-6">
-          <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center mx-auto mb-3">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.15), rgba(124,58,237,0.05))' }}>
             <Plus className="w-5 h-5 text-violet-500" />
           </div>
-          <p className="text-sm font-medium text-stone-900 dark:text-stone-50 mb-1">No budget categories yet</p>
-          <p className="text-xs text-stone-400 mb-3">Create categories with spending limits to track your envelopes</p>
+          <p className="text-sm font-semibold text-stone-900 dark:text-stone-50 mb-1">No envelopes yet</p>
+          <p className="text-xs text-stone-400 mb-3 leading-relaxed">Create budget categories with monthly limits to track your spending</p>
           {onAddCategory && (
             <button
               onClick={onAddCategory}
               className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors"
             >
-              Create Category
+              Create Envelope
             </button>
           )}
         </div>
       ) : (
         <div className="space-y-3">
-          {categories.map(cat => (
-            <EnvelopeCard key={cat.id} cat={cat} />
-          ))}
+          {categories.map(cat => <EnvelopeCard key={cat.id} cat={cat} />)}
         </div>
       )}
     </div>
