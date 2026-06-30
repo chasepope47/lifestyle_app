@@ -175,11 +175,13 @@ export default function BudgetPage() {
 
   // Mutations
   const handleCategorize = async (txId: string, category: string, categoryId?: string) => {
-    const { error } = await supabase
-      .from('transactions')
-      .update(categoryId ? { category, category_id: categoryId } : { category })
-      .eq('id', txId)
-    if (error) throw error
+    // Update category name first (this marks the transaction as reviewed)
+    const { error } = await supabase.from('transactions').update({ category }).eq('id', txId)
+    if (error) { console.error('categorize error', error); return }
+    // Also link the envelope category_id if provided
+    if (categoryId) {
+      await supabase.from('transactions').update({ category_id: categoryId }).eq('id', txId)
+    }
     setTransactions(prev => prev.map(t =>
       t.id === txId ? { ...t, category, ...(categoryId ? { category_id: categoryId } : {}) } : t
     ))
