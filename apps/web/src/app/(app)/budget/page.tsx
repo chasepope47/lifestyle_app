@@ -147,7 +147,7 @@ export default function BudgetPage() {
   }, [householdId, currentMonth])
 
   // Derived values
-  const unreviewed = transactions.filter(t => !t.category)
+  const unreviewed = transactions.filter(t => !t.category && !t.category_id)
   const income = transactions.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0)
   const expenses = transactions.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0)
   const savings = transactions.filter(t => t.category === 'savings').reduce((s, t) => s + Math.abs(t.amount), 0)
@@ -175,16 +175,17 @@ export default function BudgetPage() {
 
   // Mutations
   const handleCategorize = async (txId: string, category: string, categoryId?: string) => {
-    // Update category name first (this marks the transaction as reviewed)
-    const { error } = await supabase.from('transactions').update({ category }).eq('id', txId)
-    if (error) { console.error('categorize error', error); return }
-    // Also link the envelope category_id if provided
     if (categoryId) {
-      await supabase.from('transactions').update({ category_id: categoryId }).eq('id', txId)
+      // Envelope category — only write category_id (category column has a check constraint)
+      const { error } = await supabase.from('transactions').update({ category_id: categoryId }).eq('id', txId)
+      if (error) { console.error('categorize error', error); return }
+      setTransactions(prev => prev.map(t => t.id === txId ? { ...t, category_id: categoryId } : t))
+    } else {
+      // Legacy (needs/wants/savings/transfers) — write category text
+      const { error } = await supabase.from('transactions').update({ category }).eq('id', txId)
+      if (error) { console.error('categorize error', error); return }
+      setTransactions(prev => prev.map(t => t.id === txId ? { ...t, category } : t))
     }
-    setTransactions(prev => prev.map(t =>
-      t.id === txId ? { ...t, category, ...(categoryId ? { category_id: categoryId } : {}) } : t
-    ))
   }
 
   const handleCategoryChange = async (txId: string, category: string) => {
