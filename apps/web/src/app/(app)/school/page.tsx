@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Plus, RefreshCw } from 'lucide-react'
+import { PageHero } from '@/components/layout/PageHero'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
@@ -77,18 +78,24 @@ export default function SchoolPage() {
   if (loading) return <div className="p-8 text-stone-400">Loading…</div>
 
   return (
-    <div className="px-4 py-8 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-50">School</h1>
-        <div className="flex gap-2">
-          <button onClick={syncCanvas} disabled={syncing} className="flex items-center gap-2 px-3 py-2 rounded-xl border border-stone-300 dark:border-stone-700 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
-            <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} /> Canvas sync
-          </button>
-          <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500 text-white text-sm font-semibold hover:bg-rose-600 transition-colors">
-            <Plus className="w-4 h-4" /> Add assignment
-          </button>
-        </div>
-      </div>
+    <div className="pb-20 lg:pb-10">
+      <PageHero
+        title="School"
+        subtitle="Assignments, grades & deadlines"
+        gradient="linear-gradient(135deg, #1a0a00 0%, #3d1800 35%, #1a0800 65%, #0d0c11 100%)"
+        accentHex="#fb923c"
+        action={
+          <div className="flex gap-2">
+            <button onClick={syncCanvas} disabled={syncing} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors" style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>
+              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} /> Canvas
+            </button>
+            <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors" style={{ background: 'rgba(251,146,60,0.25)', border: '1px solid rgba(251,146,60,0.3)' }}>
+              <Plus className="w-4 h-4" /> Add
+            </button>
+          </div>
+        }
+      />
+      <div className="px-4 pt-6 max-w-5xl mx-auto">
 
       {/* Kanban board */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -152,6 +159,7 @@ export default function SchoolPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

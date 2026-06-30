@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Plus, Lock, Globe } from 'lucide-react'
+import { PageHero } from '@/components/layout/PageHero'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
@@ -45,13 +46,19 @@ export default function JournalPage() {
   if (loading) return <div className="p-8 text-stone-400">Loading…</div>
 
   return (
-    <div className="px-4 py-8 max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-50">Journal</h1>
-        <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500 text-white text-sm font-semibold hover:bg-rose-600 transition-colors">
-          <Plus className="w-4 h-4" /> New entry
-        </button>
-      </div>
+    <div className="pb-20 lg:pb-10">
+      <PageHero
+        title="Journal"
+        subtitle="Personal & shared entries"
+        gradient="linear-gradient(135deg, #1a0015 0%, #3d002e 35%, #1a0012 65%, #0d0c11 100%)"
+        accentHex="#f472b6"
+        action={
+          <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors" style={{ background: 'rgba(244,114,182,0.25)', border: '1px solid rgba(244,114,182,0.3)' }}>
+            <Plus className="w-4 h-4" /> New entry
+          </button>
+        }
+      />
+      <div className="px-4 pt-6 max-w-2xl mx-auto">
 
       {entries.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-stone-300 dark:border-stone-700 p-8 text-center text-stone-400">
@@ -147,6 +154,7 @@ export default function JournalPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

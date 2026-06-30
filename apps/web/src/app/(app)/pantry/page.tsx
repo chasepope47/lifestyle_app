@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Plus, Search, Trash2, AlertCircle, ArrowLeft, Barcode } from 'lucide-react'
+import { Plus, Search, Trash2, ArrowLeft, Barcode, ShoppingCart, PackagePlus } from 'lucide-react'
+import { PageHero } from '@/components/layout/PageHero'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { createClient } from '@/lib/supabase/client'
 import { getExpirationStatus, expirationBadgeClasses, formatExpirationLabel } from '@lifestyle/shared'
@@ -31,6 +32,8 @@ export default function PantryPage() {
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState({ name: '', category: '', quantity: '1', unit: '', price: '', expiration_date: '', store: 'No store' })
+  const [restocking, setRestocking] = useState<PantryItem | null>(null)
+  const [restockForm, setRestockForm] = useState({ quantity: '1', expiration_date: '', price: '', store: '' })
 
   const load = async () => {
     if (!householdId) return
@@ -67,10 +70,41 @@ export default function PantryPage() {
     setItems(prev => prev.filter(i => i.id !== id))
   }
 
+  const updateItem = async (id: string, updates: Partial<PantryItem>) => {
+    await supabase.from('pantry_items').update(updates).eq('id', id)
+    setItems(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i))
+  }
+
+  const openRestock = (item: PantryItem) => {
+    setRestocking(item)
+    setRestockForm({
+      quantity: '1',
+      expiration_date: '',
+      price: item.price?.toString() ?? '',
+      store: item.store ?? '',
+    })
+  }
+
+  const submitRestock = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!restocking) return
+    await updateItem(restocking.id, {
+      quantity: parseFloat(restockForm.quantity) || 1,
+      expiration_date: restockForm.expiration_date || null,
+      price: restockForm.price ? parseFloat(restockForm.price) : restocking.price,
+      store: restockForm.store || restocking.store,
+    })
+    setRestocking(null)
+  }
+
   const filtered = items.filter(i => {
     const matchesSearch = i.name.toLowerCase().includes(search.toLowerCase())
     const matchesCategory = selectedCategory === 'All' || i.category === selectedCategory
-    const isActive = activeTab === 'pantry' ? !['expired', 'critical'].includes(getExpirationStatus(i.expiration_date)) : ['expired', 'critical', 'soon'].includes(getExpirationStatus(i.expiration_date))
+    const status = getExpirationStatus(i.expiration_date)
+    const isEmpty = i.quantity != null && i.quantity <= 0
+    const isActive = activeTab === 'pantry'
+      ? !isEmpty && !['expired', 'critical'].includes(status)
+      : isEmpty || ['expired', 'critical', 'soon'].includes(status)
     return matchesSearch && matchesCategory && isActive
   })
 
@@ -99,7 +133,23 @@ export default function PantryPage() {
   if (loading) return <div className="p-8 text-stone-400">Loading…</div>
 
   return (
-    <div className="px-4 py-8 max-w-5xl mx-auto pb-20">
+    <div className="pb-20 lg:pb-10">
+      <PageHero
+        title="Pantry"
+        subtitle="Kitchen inventory & shopping list"
+        gradient="linear-gradient(135deg, #1a1200 0%, #3d2800 35%, #1a1000 65%, #0d0c11 100%)"
+        accentHex="#fbbf24"
+        action={
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-stone-900 text-sm font-semibold transition-colors"
+            style={{ background: '#fbbf24' }}
+          >
+            <Plus className="w-4 h-4" /> Add Item
+          </button>
+        }
+      />
+      <div className="px-4 pt-6 max-w-5xl mx-auto">
       {/* Tabs */}
       <div className="flex gap-4 mb-6 border-b border-stone-700">
         <button
@@ -219,6 +269,13 @@ export default function PantryPage() {
                                 </span>
                               )}
                               <button
+                                onClick={() => updateItem(item.id, { quantity: 0 })}
+                                title="Mark as used up"
+                                className="p-2 opacity-0 group-hover:opacity-100 hover:bg-amber-500/10 rounded transition-all"
+                              >
+                                <ShoppingCart className="w-4 h-4 text-amber-400" />
+                              </button>
+                              <button
                                 onClick={() => deleteItem(item.id)}
                                 className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
                               >
@@ -239,10 +296,10 @@ export default function PantryPage() {
         <>
           {/* Shopping tab */}
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-stone-50 mb-4">Items to Buy or Remove</h2>
+            <h2 className="text-lg font-semibold text-stone-50 mb-4">Shopping List</h2>
             {filtered.length === 0 ? (
               <div className="rounded-lg border border-dashed border-stone-700 p-8 text-center text-stone-400">
-                No expired or soon-to-expire items
+                Nothing to restock right now
               </div>
             ) : (
               <div className="space-y-4">
@@ -255,22 +312,32 @@ export default function PantryPage() {
                     <div className="space-y-2">
                       {storeItems.map(item => {
                         const status = getExpirationStatus(item.expiration_date)
+                        const isEmpty = item.quantity != null && item.quantity <= 0
                         return (
                           <div key={item.id} className="flex items-center justify-between rounded-lg bg-stone-800/50 border border-stone-700 px-4 py-3 group hover:bg-stone-800 transition-colors">
                             <div className="flex-1">
                               <p className="font-medium text-stone-50">{item.name}</p>
                               <div className="flex items-center gap-2 mt-1 text-xs text-stone-400">
                                 {item.category && <span>{item.category}</span>}
-                                {item.quantity && <span>•</span>}
-                                {item.quantity && <span>Qty: {item.quantity}{item.unit ? ' ' + item.unit : ''}</span>}
                               </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              {item.expiration_date && (
+                            <div className="flex items-center gap-2">
+                              {isEmpty ? (
+                                <span className="text-xs px-2 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20 whitespace-nowrap">
+                                  Empty
+                                </span>
+                              ) : item.expiration_date ? (
                                 <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${expirationBadgeClasses[status]}`}>
                                   {formatExpirationLabel(item.expiration_date)}
                                 </span>
-                              )}
+                              ) : null}
+                              <button
+                                onClick={() => openRestock(item)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-900 transition-colors"
+                                style={{ background: '#fbbf24' }}
+                              >
+                                <PackagePlus className="w-3.5 h-3.5" /> Restocked
+                              </button>
                               <button
                                 onClick={() => deleteItem(item.id)}
                                 className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
@@ -290,13 +357,6 @@ export default function PantryPage() {
         </>
       )}
 
-      {/* Add button */}
-      <button
-        onClick={() => setShowAdd(true)}
-        className="fixed bottom-24 right-4 rounded-full bg-yellow-500 hover:bg-yellow-600 text-stone-900 p-4 shadow-lg transition-colors"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
 
       {/* Add Item Modal */}
       {showAdd && (
@@ -427,6 +487,63 @@ export default function PantryPage() {
           </div>
         </div>
       )}
+
+      {/* Restock Modal */}
+      {restocking && (
+        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50">
+          <div className="bg-stone-900 w-full sm:max-w-md sm:rounded-2xl max-h-screen overflow-y-auto flex flex-col">
+            <div className="sticky top-0 bg-stone-900 border-b border-stone-700 px-6 py-4 flex items-center gap-3">
+              <button onClick={() => setRestocking(null)} className="p-1 hover:bg-stone-800 rounded">
+                <ArrowLeft className="w-5 h-5 text-stone-50" />
+              </button>
+              <div>
+                <h1 className="text-lg font-semibold text-stone-50">{restocking.name}</h1>
+                <p className="text-xs text-stone-400">Update details to return to pantry</p>
+              </div>
+            </div>
+            <form onSubmit={submitRestock} className="px-6 py-4 space-y-4">
+              <div>
+                <label className="text-sm font-medium text-stone-300 mb-2 block">New Quantity *</label>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => setRestockForm(p => ({ ...p, quantity: String(Math.max(1, parseFloat(p.quantity) - 1)) }))}
+                    className="w-10 h-10 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-50 font-semibold transition-colors">−</button>
+                  <input type="number" min="0.1" step="0.1" required value={restockForm.quantity}
+                    onChange={e => setRestockForm(p => ({ ...p, quantity: e.target.value }))}
+                    className="flex-1 rounded-lg border border-stone-600 bg-stone-800 px-4 py-2 text-center text-stone-50 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+                  <button type="button" onClick={() => setRestockForm(p => ({ ...p, quantity: String(parseFloat(p.quantity) + 1) }))}
+                    className="w-10 h-10 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors">+</button>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-300 mb-2 block">New Expiration Date</label>
+                <input type="date" value={restockForm.expiration_date}
+                  onChange={e => setRestockForm(p => ({ ...p, expiration_date: e.target.value }))}
+                  className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-300 mb-2 block">Store</label>
+                <select value={restockForm.store} onChange={e => setRestockForm(p => ({ ...p, store: e.target.value }))}
+                  className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                  <option value="">Same as before ({restocking.store ?? 'No store'})</option>
+                  {STORES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-300 mb-2 block">Price ($)</label>
+                <input type="number" step="0.01" placeholder={restocking.price?.toFixed(2) ?? '0.00'} value={restockForm.price}
+                  onChange={e => setRestockForm(p => ({ ...p, price: e.target.value }))}
+                  className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+              </div>
+              <div className="pt-2">
+                <button type="submit" className="w-full py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors">
+                  Back to Pantry
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      </div>
     </div>
   )
 }

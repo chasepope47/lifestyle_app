@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Plus, Check, Lock, ExternalLink } from 'lucide-react'
+import { PageHero } from '@/components/layout/PageHero'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
@@ -81,13 +82,19 @@ export default function ReligiousPage() {
   if (loading) return <div className="p-8 text-stone-400">Loading…</div>
 
   return (
-    <div className="px-4 py-8 max-w-3xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-50">Faith</h1>
-        <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500 text-white text-sm font-semibold hover:bg-rose-600 transition-colors">
-          <Plus className="w-4 h-4" /> Add
-        </button>
-      </div>
+    <div className="pb-20 lg:pb-10">
+      <PageHero
+        title="Faith"
+        subtitle="Devotionals, prayer & scripture"
+        gradient="linear-gradient(135deg, #001a1a 0%, #003d3a 35%, #001a18 65%, #0d0c11 100%)"
+        accentHex="#2dd4bf"
+        action={
+          <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors" style={{ background: 'rgba(45,212,191,0.2)', border: '1px solid rgba(45,212,191,0.3)' }}>
+            <Plus className="w-4 h-4" /> Add
+          </button>
+        }
+      />
+      <div className="px-4 pt-6 max-w-3xl mx-auto">
 
       {/* Quick links */}
       <div className="flex flex-wrap gap-2 mb-6">
@@ -230,6 +237,7 @@ export default function ReligiousPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

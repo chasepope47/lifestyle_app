@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { Plus, Search, Barcode, X, ChevronLeft, ChevronRight, Trash2, CalendarDays } from 'lucide-react'
+import { PageHero } from '@/components/layout/PageHero'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
@@ -439,7 +440,14 @@ export default function NutritionPage() {
   if (loading) return <div className="p-8 text-stone-400">Loading…</div>
 
   return (
-    <div className="px-3 sm:px-4 py-6 sm:py-8 max-w-4xl mx-auto pb-20">
+    <div className="pb-20 lg:pb-10">
+      <PageHero
+        title="Nutrition"
+        subtitle="Log food & track macros"
+        gradient="linear-gradient(135deg, #001a0e 0%, #023a1e 35%, #001a12 65%, #0d0c11 100%)"
+        accentHex="#34d399"
+      />
+      <div className="px-3 sm:px-4 pt-6 max-w-4xl mx-auto">
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -916,6 +924,7 @@ export default function NutritionPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

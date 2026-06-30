@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Plus, Play, Square, Clock, ExternalLink, Upload } from 'lucide-react'
+import { PageHero } from '@/components/layout/PageHero'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
 import { useModal } from '@/providers/ModalProvider'
@@ -80,19 +81,25 @@ export default function WorkoutsPage() {
   if (loading) return <div className="p-8 text-stone-400">Loading…</div>
 
   return (
-    <div className="px-4 py-8 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-50">Workouts</h1>
-        {!activeSession ? (
-          <button onClick={startSession} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500 text-white text-sm font-semibold hover:bg-rose-600 transition-colors">
-            <Play className="w-4 h-4" /> Start workout
-          </button>
-        ) : (
-          <button onClick={endSession} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-800 dark:bg-stone-700 text-white text-sm font-semibold hover:bg-stone-700 transition-colors">
-            <Square className="w-4 h-4" /> End workout
-          </button>
-        )}
-      </div>
+    <div className="pb-20 lg:pb-10">
+      <PageHero
+        title="Workouts"
+        subtitle="Log sessions & track progress"
+        gradient="linear-gradient(135deg, #00091a 0%, #001a3d 35%, #000a1a 65%, #0d0c11 100%)"
+        accentHex="#60a5fa"
+        action={
+          !activeSession ? (
+            <button onClick={startSession} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 transition-colors">
+              <Play className="w-4 h-4" /> Start workout
+            </button>
+          ) : (
+            <button onClick={endSession} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors" style={{ background: 'rgba(255,255,255,0.15)' }}>
+              <Square className="w-4 h-4" /> End workout
+            </button>
+          )
+        }
+      />
+      <div className="px-4 pt-6 max-w-4xl mx-auto">
 
       {/* Import from Health Apps */}
       <div className="rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-5 mb-6">
@@ -207,6 +214,7 @@ export default function WorkoutsPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   )
 }
