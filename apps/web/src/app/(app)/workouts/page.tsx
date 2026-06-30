@@ -88,6 +88,7 @@ export default function WorkoutsPage() {
         subtitle="Log sessions & track progress"
         gradient="linear-gradient(135deg, #00091a 0%, #001a3d 35%, #000a1a 65%, #0d0c11 100%)"
         accentHex="#60a5fa"
+        overlay={true}
         action={
           !activeSession ? (
             <button onClick={startSession} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 transition-colors">

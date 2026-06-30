@@ -140,6 +140,7 @@ export default function PantryPage() {
         subtitle="Kitchen inventory & shopping list"
         gradient="linear-gradient(135deg, #1a1200 0%, #3d2800 35%, #1a1000 65%, #0d0c11 100%)"
         accentHex="#fbbf24"
+        overlay={true}
         action={
           <button
             onClick={() => setShowAdd(true)}

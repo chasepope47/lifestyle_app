@@ -85,6 +85,7 @@ export default function SchoolPage() {
         subtitle="Assignments, grades & deadlines"
         gradient="linear-gradient(135deg, #1a0a00 0%, #3d1800 35%, #1a0800 65%, #0d0c11 100%)"
         accentHex="#fb923c"
+        overlay={true}
         action={
           <div className="flex gap-2">
             <button onClick={syncCanvas} disabled={syncing} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors" style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>

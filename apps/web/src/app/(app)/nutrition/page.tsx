@@ -447,6 +447,7 @@ export default function NutritionPage() {
         subtitle="Log food & track macros"
         gradient="linear-gradient(135deg, #001a0e 0%, #023a1e 35%, #001a12 65%, #0d0c11 100%)"
         accentHex="#34d399"
+        overlay={true}
       />
       <div className="px-3 sm:px-4 pt-6 max-w-4xl mx-auto">
 

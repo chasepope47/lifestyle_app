@@ -89,6 +89,7 @@ export default function ReligiousPage() {
         subtitle="Devotionals, prayer & scripture"
         gradient="linear-gradient(135deg, #001a1a 0%, #003d3a 35%, #001a18 65%, #0d0c11 100%)"
         accentHex="#2dd4bf"
+        overlay={true}
         action={
           <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors" style={{ background: 'rgba(45,212,191,0.2)', border: '1px solid rgba(45,212,191,0.3)' }}>
             <Plus className="w-4 h-4" /> Add

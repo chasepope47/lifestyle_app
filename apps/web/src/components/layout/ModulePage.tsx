@@ -4,47 +4,45 @@ import type { LucideIcon } from 'lucide-react'
 
 export type ModuleKey = 'budget' | 'pantry' | 'nutrition' | 'workouts' | 'journal' | 'school' | 'religious'
 
-const MODULES: Record<ModuleKey, { topColor: string; accentRgb: string; Icon: LucideIcon }> = {
-  budget:    { topColor: '#0f0823', accentRgb: '124,58,237',  Icon: Landmark       },
-  pantry:    { topColor: '#1a1100', accentRgb: '251,191,36',  Icon: ShoppingBasket },
-  nutrition: { topColor: '#011a0a', accentRgb: '52,211,153',  Icon: Leaf           },
-  workouts:  { topColor: '#010f1d', accentRgb: '96,165,250',  Icon: Mountain       },
-  journal:   { topColor: '#1a0014', accentRgb: '244,114,182', Icon: BookOpen       },
-  school:    { topColor: '#1a0900', accentRgb: '251,146,60',  Icon: GraduationCap  },
-  religious: { topColor: '#001818', accentRgb: '45,212,191',  Icon: Sun            },
+const MODULES: Record<ModuleKey, { accentRgb: string; Icon: LucideIcon; bgImage: string }> = {
+  budget:    { accentRgb: '124,58,237',  Icon: Landmark,       bgImage: '/images/modules/budget.jpg'    },
+  pantry:    { accentRgb: '251,191,36',  Icon: ShoppingBasket, bgImage: '/images/modules/pantry.jpg'    },
+  nutrition: { accentRgb: '52,211,153',  Icon: Leaf,           bgImage: '/images/modules/nutrition.jpg' },
+  workouts:  { accentRgb: '96,165,250',  Icon: Mountain,       bgImage: '/images/modules/workouts.jpg'  },
+  journal:   { accentRgb: '244,114,182', Icon: BookOpen,       bgImage: '/images/modules/journal.jpg'   },
+  school:    { accentRgb: '251,146,60',  Icon: GraduationCap,  bgImage: '/images/modules/school.jpg'    },
+  religious: { accentRgb: '45,212,191',  Icon: Sun,            bgImage: '/images/modules/religious.jpg' },
 }
 
 export function ModulePage({ module, children }: { module: ModuleKey; children: React.ReactNode }) {
-  const { topColor, accentRgb, Icon } = MODULES[module]
+  const { accentRgb, Icon, bgImage } = MODULES[module]
   return (
-    <div
-      className="pb-20 lg:pb-10 min-h-screen relative overflow-hidden"
-      style={{
-        background: [
-          'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)',
-          `radial-gradient(ellipse 90% 40% at 50% -5%, rgba(${accentRgb},0.10), transparent)`,
-          `linear-gradient(180deg, ${topColor} 0%, #0d0c11 50%)`,
-          '#0d0c11',
-        ].join(', '),
-        backgroundSize: '32px 32px, 100% 100%, 100% auto, auto',
-      }}
-    >
-      {/* Thematic watermark icon */}
+    <div className="pb-20 lg:pb-10 min-h-screen relative overflow-hidden" style={{ background: '#0d0c11' }}>
+      {/* Full-bleed background photo */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={bgImage}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+        style={{ opacity: 0.9 }}
+        loading="eager"
+      />
+      {/* Dark overlay — ensures readability over any photo */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(0,0,0,0.55)' }} />
+      {/* Thematic watermark icon at bottom-right */}
       <div
         className="absolute bottom-0 right-0 translate-x-1/3 translate-y-1/4 pointer-events-none select-none"
         aria-hidden
+        style={{ zIndex: 5 }}
       >
         <Icon
-          style={{
-            width: 340,
-            height: 340,
-            color: `rgb(${accentRgb})`,
-            opacity: 0.07,
-            strokeWidth: 0.6,
-          }}
+          style={{ width: 280, height: 280, color: `rgb(${accentRgb})`, opacity: 0.12, strokeWidth: 0.7 }}
         />
       </div>
-      <div className="relative z-10">{children}</div>
+      {/* Page content sits above image and overlay */}
+      <div className="relative" style={{ zIndex: 10 }}>
+        {children}
+      </div>
     </div>
   )
 }

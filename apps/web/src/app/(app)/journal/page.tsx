@@ -53,6 +53,7 @@ export default function JournalPage() {
         subtitle="Personal & shared entries"
         gradient="linear-gradient(135deg, #1a0015 0%, #3d002e 35%, #1a0012 65%, #0d0c11 100%)"
         accentHex="#f472b6"
+        overlay={true}
         action={
           <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors" style={{ background: 'rgba(244,114,182,0.25)', border: '1px solid rgba(244,114,182,0.3)' }}>
             <Plus className="w-4 h-4" /> New entry
