@@ -1,82 +1,148 @@
 'use client'
 import Link from 'next/link'
-import { Wallet, ShoppingBasket, Apple, Dumbbell, BookOpen, GraduationCap, BookHeart, Heart } from 'lucide-react'
+import {
+  Wallet, ShoppingBasket, Apple, Dumbbell,
+  BookOpen, GraduationCap, BookHeart, Heart, ArrowRight,
+} from 'lucide-react'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
 
-const MODULE_CARDS = [
-  { href: '/budget', icon: Wallet, label: 'Budget', description: 'Track income & expenses', color: 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400' },
-  { href: '/pantry', icon: ShoppingBasket, label: 'Pantry', description: 'Kitchen inventory & meals', color: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' },
-  { href: '/nutrition', icon: Apple, label: 'Nutrition', description: 'Log food & track macros', color: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' },
-  { href: '/workouts', icon: Dumbbell, label: 'Workouts', description: 'Log sessions & sync wearables', color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' },
-  { href: '/journal', icon: BookOpen, label: 'Journal', description: 'Personal & shared entries', color: 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400' },
-  { href: '/school', icon: GraduationCap, label: 'School', description: 'Assignments & grades', color: 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' },
-  { href: '/religious', icon: BookHeart, label: 'Faith', description: 'Devotionals, prayer & scripture', color: 'bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400' },
+const MODULES = [
+  { href: '/budget',    icon: Wallet,        label: 'Budget',    desc: 'Track income & expenses',     hex: '#a78bfa', glow: 'rgba(167,139,250,0.15)' },
+  { href: '/pantry',    icon: ShoppingBasket,label: 'Pantry',    desc: 'Kitchen inventory & meals',   hex: '#fbbf24', glow: 'rgba(251,191,36,0.15)'  },
+  { href: '/nutrition', icon: Apple,         label: 'Nutrition', desc: 'Log food & track macros',     hex: '#34d399', glow: 'rgba(52,211,153,0.15)'  },
+  { href: '/workouts',  icon: Dumbbell,      label: 'Workouts',  desc: 'Sessions & wearables',        hex: '#60a5fa', glow: 'rgba(96,165,250,0.15)'  },
+  { href: '/journal',   icon: BookOpen,      label: 'Journal',   desc: 'Personal & shared entries',   hex: '#f472b6', glow: 'rgba(244,114,182,0.15)' },
+  { href: '/school',    icon: GraduationCap, label: 'School',    desc: 'Assignments & grades',        hex: '#fb923c', glow: 'rgba(251,146,60,0.15)'  },
+  { href: '/religious', icon: BookHeart,     label: 'Faith',     desc: 'Devotionals, prayer & more',  hex: '#2dd4bf', glow: 'rgba(45,212,191,0.15)'  },
 ]
+
+function greeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
+  return 'Good evening'
+}
 
 export default function DashboardPage() {
   const { user } = useAuth()
   const { household, partner } = useHousehold()
-
-  const greeting = () => {
-    const h = new Date().getHours()
-    if (h < 12) return 'Good morning'
-    if (h < 17) return 'Good afternoon'
-    return 'Good evening'
-  }
-
   const displayName = user?.user_metadata?.display_name ?? 'there'
 
   return (
-    <div className="px-4 py-8 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-1">
-          <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-50">
-            {greeting()}, {displayName} 👋
-          </h1>
-        </div>
-        {partner && (
-          <p className="text-stone-500 dark:text-stone-400 text-sm flex items-center gap-1">
-            <Heart className="w-3.5 h-3.5 text-rose-400" />
-            Sharing with {partner.display_name ?? 'your partner'} in {household?.name}
+    <div className="pb-20 lg:pb-10">
+      {/* Hero banner */}
+      <div
+        className="px-5 pt-10 pb-8 mb-6 relative overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #1a0533 0%, #2e0a52 35%, #1a0a2e 65%, #0d0c11 100%)' }}
+      >
+        {/* Ambient glow orbs */}
+        <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full opacity-20 pointer-events-none" style={{ background: 'radial-gradient(circle, #a78bfa, transparent 70%)' }} />
+        <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full opacity-15 pointer-events-none" style={{ background: 'radial-gradient(circle, #ec4899, transparent 70%)' }} />
+
+        <div className="relative">
+          <p className="text-sm font-medium mb-1" style={{ color: 'rgba(167,139,250,0.7)' }}>
+            {greeting()}
           </p>
-        )}
+          <h1 className="text-2xl font-bold text-white mb-3">
+            Welcome back, {displayName}
+          </h1>
+
+          {partner ? (
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
+              style={{ background: 'rgba(236,72,153,0.12)', border: '1px solid rgba(236,72,153,0.2)' }}
+            >
+              <div
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg, #ec4899, #f97316)' }}
+              >
+                {(partner.display_name ?? '?')[0].toUpperCase()}
+              </div>
+              <Heart className="w-3 h-3 text-rose-400" />
+              <span style={{ color: 'rgba(236,72,153,0.85)' }}>
+                {partner.display_name ?? 'Partner'} · {household?.name}
+              </span>
+            </div>
+          ) : (
+            <div className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>
+              {household?.name ?? 'Your household'}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Invite partner CTA */}
-      {!partner && household && (
-        <div className="mb-8 rounded-2xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 p-5">
-          <div className="flex items-start gap-3">
-            <Heart className="w-5 h-5 text-rose-500 mt-0.5 shrink-0" />
-            <div>
-              <p className="font-semibold text-rose-800 dark:text-rose-200 mb-1">Invite your partner</p>
-              <p className="text-sm text-rose-600 dark:text-rose-300 mb-3">
+      <div className="px-4 max-w-4xl mx-auto">
+        {/* Invite partner CTA */}
+        {!partner && household && (
+          <div
+            className="mb-6 rounded-2xl p-4 flex items-center gap-4"
+            style={{ background: 'rgba(236,72,153,0.08)', border: '1px solid rgba(236,72,153,0.18)' }}
+          >
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.25), rgba(249,115,22,0.15))' }}
+            >
+              <Heart className="w-5 h-5 text-rose-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-rose-300 text-sm mb-0.5">Invite your partner</p>
+              <p className="text-xs" style={{ color: 'rgba(236,72,153,0.55)' }}>
                 Share your invite code so they can join your household.
               </p>
-              <Link href="/household/settings" className="inline-flex items-center px-4 py-2 rounded-xl bg-rose-500 text-white text-sm font-semibold hover:bg-rose-600 transition-colors">
-                Get invite code
-              </Link>
             </div>
+            <Link
+              href="/household/settings"
+              className="flex-shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #ec4899, #f97316)' }}
+            >
+              Invite <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Module grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {MODULE_CARDS.map(({ href, icon: Icon, label, description, color }) => (
-          <Link
-            key={href}
-            href={href}
-            className="group rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-5 hover:border-stone-300 dark:hover:border-stone-700 hover:shadow-sm transition-all"
-          >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${color}`}>
-              <Icon className="w-5 h-5" />
-            </div>
-            <h3 className="font-semibold text-stone-900 dark:text-stone-50 mb-0.5 group-hover:text-rose-500 transition-colors">{label}</h3>
-            <p className="text-sm text-stone-500 dark:text-stone-400">{description}</p>
-          </Link>
-        ))}
+        {/* Module grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {MODULES.map(({ href, icon: Icon, label, desc, hex, glow }) => (
+            <Link
+              key={href}
+              href={href}
+              className="group relative rounded-2xl p-5 transition-all duration-200 overflow-hidden bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 hover:shadow-lg hover:-translate-y-0.5"
+            >
+              {/* Top accent line */}
+              <div
+                className="absolute top-0 left-0 right-0 h-px"
+                style={{ background: `linear-gradient(90deg, transparent, ${hex}60, transparent)` }}
+              />
+
+              {/* Hover glow */}
+              <div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                style={{ background: `radial-gradient(ellipse at 0% 0%, ${glow}, transparent 60%)` }}
+              />
+
+              <div className="relative">
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center mb-4 shadow-sm"
+                  style={{ backgroundColor: `${hex}15` }}
+                >
+                  <Icon className="w-5 h-5" style={{ color: hex }} />
+                </div>
+
+                <div className="flex items-end justify-between">
+                  <div>
+                    <h3 className="font-semibold text-stone-900 dark:text-stone-50 mb-0.5">{label}</h3>
+                    <p className="text-xs text-stone-400 dark:text-stone-500 leading-relaxed">{desc}</p>
+                  </div>
+                  <ArrowRight
+                    className="w-4 h-4 flex-shrink-0 ml-2 mb-0.5 opacity-0 group-hover:opacity-60 transition-opacity"
+                    style={{ color: hex }}
+                  />
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   )
