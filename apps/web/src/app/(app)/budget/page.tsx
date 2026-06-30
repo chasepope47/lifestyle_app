@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, RotateCcw } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { ModulePage } from '@/components/layout/ModulePage'
 import { useHousehold } from '@/providers/HouseholdProvider'
@@ -154,6 +154,20 @@ export default function BudgetPage() {
     transfers: transactions.filter(t => t.category === 'transfers').reduce((s, t) => s + Math.abs(t.amount), 0),
   }
   const monthLabel = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+
+  const resetMonthTransactions = async () => {
+    const label = currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })
+    const count = transactions.length
+    if (!count) return
+    if (!confirm(`Delete all ${count} transaction${count !== 1 ? 's' : ''} for ${label}? This cannot be undone.`)) return
+    const { startDate, endDate } = monthBounds(currentMonth)
+    await supabase.from('transactions')
+      .delete()
+      .eq('household_id', householdId!)
+      .gte('transaction_date', startDate)
+      .lte('transaction_date', endDate)
+    setTransactions([])
+  }
 
   // Mutations
   const handleCategorize = async (txId: string, category: string) => {
@@ -312,13 +326,24 @@ export default function BudgetPage() {
           <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-50">Budget</h1>
           <p className="text-xs text-stone-400 mt-0.5">Track, review &amp; plan your spending</p>
         </div>
-        <button
-          onClick={() => setShowQuickAdd(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-all shadow-sm hover:shadow-md active:scale-95"
-          style={{ boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}
-        >
-          <Plus className="w-4 h-4" /> Add Transaction
-        </button>
+        <div className="flex items-center gap-2">
+          {transactions.length > 0 && (
+            <button
+              onClick={resetMonthTransactions}
+              className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-red-400 hover:bg-red-500/10"
+              title="Delete all transactions for this month so you can re-upload a clean statement"
+            >
+              <RotateCcw className="w-4 h-4" /> Reset month
+            </button>
+          )}
+          <button
+            onClick={() => setShowQuickAdd(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-all shadow-sm hover:shadow-md active:scale-95"
+            style={{ boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}
+          >
+            <Plus className="w-4 h-4" /> Add Transaction
+          </button>
+        </div>
       </div>
 
       <MonthSelector
