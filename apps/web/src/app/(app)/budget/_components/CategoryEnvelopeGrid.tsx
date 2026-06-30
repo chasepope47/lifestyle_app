@@ -14,6 +14,7 @@ export interface EnvelopeCategory {
 interface CategoryEnvelopeGridProps {
   categories: EnvelopeCategory[]
   onAddCategory?: () => void
+  onEditCategory?: (cat: EnvelopeCategory) => void
 }
 
 function getBarColor(pct: number): string {
@@ -23,7 +24,7 @@ function getBarColor(pct: number): string {
   return '#34d399'
 }
 
-function EnvelopeCard({ cat }: { cat: EnvelopeCategory }) {
+function EnvelopeCard({ cat, onEdit }: { cat: EnvelopeCategory; onEdit?: (cat: EnvelopeCategory) => void }) {
   const hasLimit = cat.monthly_limit != null && cat.monthly_limit > 0
   const pct = hasLimit ? Math.min(110, (cat.spent / cat.monthly_limit!) * 100) : 0
   const remaining = hasLimit ? cat.monthly_limit! - cat.spent : 0
@@ -33,7 +34,15 @@ function EnvelopeCard({ cat }: { cat: EnvelopeCategory }) {
   const accentColor = cat.color && cat.color.startsWith('#') ? cat.color : '#7c3aed'
 
   return (
-    <div className="relative rounded-2xl p-4 overflow-hidden bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 shadow-sm hover:shadow-md transition-shadow">
+    <div
+      onClick={() => onEdit?.(cat)}
+      className="relative rounded-2xl p-4 overflow-hidden bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+    >
+      {onEdit && (
+        <span className="absolute top-3 right-3 text-[11px] uppercase tracking-[0.14em] font-semibold text-violet-600 dark:text-violet-300">
+          Edit
+        </span>
+      )}
       {/* Color accent strip at top */}
       <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl" style={{ backgroundColor: accentColor }} />
 
@@ -118,7 +127,7 @@ export function CategoryEnvelopeGrid({ categories, onAddCategory }: CategoryEnve
         </div>
       ) : (
         <div className="space-y-3">
-          {categories.map(cat => <EnvelopeCard key={cat.id} cat={cat} />)}
+          {categories.map(cat => <EnvelopeCard key={cat.id} cat={cat} onEdit={onEditCategory} />)}
         </div>
       )}
     </div>

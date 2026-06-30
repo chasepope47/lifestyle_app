@@ -62,6 +62,10 @@ export default function BudgetPage() {
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'dashboard' | 'review'>('dashboard')
   const [showQuickAdd, setShowQuickAdd] = useState(false)
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<EnvelopeCategory | null>(null)
+  const [categoryForm, setCategoryForm] = useState({ name: '', monthly_limit: '', color: '', icon: '' })
+  const [categorySaving, setCategorySaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Fetch accounts + 6-month trend on mount (once)
@@ -204,6 +208,74 @@ export default function BudgetPage() {
         created_by: user.id,
       }).select().single()
       if (data) setAccounts(prev => [...prev, data])
+    }
+  }
+
+  const openAddCategory = () => {
+    setEditingCategory(null)
+    setCategoryForm({ name: '', monthly_limit: '', color: '', icon: '' })
+    setShowCategoryModal(true)
+  }
+
+  const openEditCategory = (cat: EnvelopeCategory) => {
+    setEditingCategory(cat)
+    setCategoryForm({
+      name: cat.name,
+      monthly_limit: cat.monthly_limit != null ? cat.monthly_limit.toString() : '',
+      color: cat.color ?? '',
+      icon: cat.icon ?? '',
+    })
+    setShowCategoryModal(true)
+  }
+
+  const handleSaveCategory = async () => {
+    if (!householdId || !categoryForm.name) return
+    setCategorySaving(true)
+    try {
+      const monthly_limit = categoryForm.monthly_limit.trim() === ''
+        ? null
+        : Number(categoryForm.monthly_limit)
+
+      if (editingCategory) {
+        await supabase.from('budget_categories').update({
+          name: categoryForm.name,
+          monthly_limit,
+          color: categoryForm.color || null,
+          icon: categoryForm.icon || null,
+        }).eq('id', editingCategory.id)
+
+        setEnvelopeCategories(prev => prev.map(cat =>
+          cat.id === editingCategory.id
+            ? { ...cat, name: categoryForm.name, monthly_limit, color: categoryForm.color || null, icon: categoryForm.icon || null }
+            : cat
+        ))
+      } else {
+        const { data } = await supabase.from('budget_categories').insert({
+          household_id: householdId,
+          name: categoryForm.name,
+          monthly_limit,
+          color: categoryForm.color || null,
+          icon: categoryForm.icon || null,
+        }).select().single()
+
+        if (data) {
+          setEnvelopeCategories(prev => [
+            ...prev,
+            {
+              id: data.id,
+              name: data.name,
+              color: data.color,
+              icon: data.icon,
+              monthly_limit: data.monthly_limit,
+              spent: 0,
+            },
+          ])
+        }
+      }
+      setShowCategoryModal(false)
+      setEditingCategory(null)
+    } finally {
+      setCategorySaving(false)
     }
   }
 
@@ -392,6 +464,8 @@ export default function BudgetPage() {
 
           <CategoryEnvelopeGrid
             categories={envelopeCategories}
+            onAddCategory={openAddCategory}
+            onEditCategory={openEditCategory}
           />
 
           <AccountsPanel
@@ -401,6 +475,82 @@ export default function BudgetPage() {
           />
         </div>
       </div>
+
+      {/* Category modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-stone-900 rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-stone-900 dark:text-stone-50">
+                {editingCategory ? 'Edit Envelope' : 'Add Envelope'}
+              </h3>
+              <button onClick={() => { setShowCategoryModal(false); setEditingCategory(null) }} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors">
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4 mb-5">
+              <div>
+                <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Name</label>
+                <input
+                  type="text"
+                  value={categoryForm.name}
+                  onChange={e => setCategoryForm(p => ({ ...p, name: e.target.value }))}
+                  placeholder="e.g. Groceries"
+                  className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Monthly limit</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={categoryForm.monthly_limit}
+                  onChange={e => setCategoryForm(p => ({ ...p, monthly_limit: e.target.value }))}
+                  placeholder="Leave blank for no limit"
+                  className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Color</label>
+                  <input
+                    type="text"
+                    value={categoryForm.color}
+                    onChange={e => setCategoryForm(p => ({ ...p, color: e.target.value }))}
+                    placeholder="#7c3aed"
+                    className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Icon</label>
+                  <input
+                    type="text"
+                    value={categoryForm.icon}
+                    onChange={e => setCategoryForm(p => ({ ...p, icon: e.target.value }))}
+                    placeholder="⭐"
+                    className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleSaveCategory}
+              disabled={categorySaving || !categoryForm.name}
+              className="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold transition-colors mb-3 disabled:opacity-60 shadow-sm"
+            >
+              {categorySaving ? 'Saving…' : editingCategory ? 'Save Changes' : 'Create Envelope'}
+            </button>
+            <button
+              onClick={() => { setShowCategoryModal(false); setEditingCategory(null) }}
+              className="w-full py-3 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Quick Add modal */}
       {showQuickAdd && user && (
