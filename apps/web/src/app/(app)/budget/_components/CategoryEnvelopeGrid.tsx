@@ -89,7 +89,7 @@ function EnvelopeCard({ cat, onEdit }: { cat: EnvelopeCategory; onEdit?: (cat: E
   )
 }
 
-export function CategoryEnvelopeGrid({ categories, onAddCategory }: CategoryEnvelopeGridProps) {
+export function CategoryEnvelopeGrid({ categories, onAddCategory, onEditCategory }: CategoryEnvelopeGridProps) {
   return (
     <div className="rounded-2xl bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
