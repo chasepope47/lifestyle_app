@@ -102,12 +102,12 @@ export default function BudgetPage() {
   }, [householdId])
 
   // Fetch month-scoped transactions + envelope spending
-  const refetchMonthData = useCallback(() => {
+  const refetchMonthData = useCallback(async () => {
     if (!householdId) return
     setLoading(true)
     const { startDate, endDate } = monthBounds(currentMonth)
 
-    Promise.all([
+    const [txRes, catTxRes] = await Promise.all([
       supabase
         .from('transactions')
         .select('*')
@@ -116,41 +116,50 @@ export default function BudgetPage() {
         .lte('transaction_date', endDate)
         .order('transaction_date', { ascending: false }),
       supabase
-        .from('budget_categories')
-        .select('id, name, color, icon, monthly_limit, is_income')
-        .eq('household_id', householdId)
-        .order('name'),
-      supabase
         .from('transactions')
         .select('category_id, amount')
         .eq('household_id', householdId)
         .gte('transaction_date', startDate)
         .lte('transaction_date', endDate)
         .not('category_id', 'is', null),
-    ]).then(([txRes, catRes, catTxRes]) => {
-      setTransactions(txRes.data ?? [])
+    ])
 
-      // Split by sign so expense cats track outflows and income cats track inflows
-      const spendMap: Record<string, number> = {}
-      const incomeMap: Record<string, number> = {}
-      for (const tx of catTxRes.data ?? []) {
-        if (!tx.category_id) continue
-        if (tx.amount < 0) spendMap[tx.category_id] = (spendMap[tx.category_id] ?? 0) + Math.abs(tx.amount)
-        else incomeMap[tx.category_id] = (incomeMap[tx.category_id] ?? 0) + tx.amount
-      }
-      setEnvelopeCategories(
-        (catRes.data ?? []).map(cat => ({
-          id: cat.id,
-          name: cat.name,
-          color: cat.color,
-          icon: cat.icon,
-          monthly_limit: cat.monthly_limit,
-          is_income: cat.is_income ?? false,
-          spent: cat.is_income ? (incomeMap[cat.id] ?? 0) : (spendMap[cat.id] ?? 0),
-        }))
-      )
-      setLoading(false)
-    })
+    // Try fetching categories with is_income; fall back gracefully if migration 020 hasn't run yet
+    let catRes = await supabase
+      .from('budget_categories')
+      .select('id, name, color, icon, monthly_limit, is_income')
+      .eq('household_id', householdId)
+      .order('name')
+    if (catRes.error) {
+      catRes = await supabase
+        .from('budget_categories')
+        .select('id, name, color, icon, monthly_limit')
+        .eq('household_id', householdId)
+        .order('name') as typeof catRes
+    }
+
+    setTransactions(txRes.data ?? [])
+
+    // Split by sign: expense categories track outflows; income categories track inflows
+    const spendMap: Record<string, number> = {}
+    const incomeMap: Record<string, number> = {}
+    for (const tx of catTxRes.data ?? []) {
+      if (!tx.category_id) continue
+      if (tx.amount < 0) spendMap[tx.category_id] = (spendMap[tx.category_id] ?? 0) + Math.abs(tx.amount)
+      else incomeMap[tx.category_id] = (incomeMap[tx.category_id] ?? 0) + tx.amount
+    }
+    setEnvelopeCategories(
+      (catRes.data ?? []).map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        color: cat.color,
+        icon: cat.icon,
+        monthly_limit: cat.monthly_limit,
+        is_income: cat.is_income ?? false,
+        spent: cat.is_income ? (incomeMap[cat.id] ?? 0) : (spendMap[cat.id] ?? 0),
+      }))
+    )
+    setLoading(false)
   }, [householdId, currentMonth])
 
   // Re-fetch on month change
@@ -271,13 +280,16 @@ export default function BudgetPage() {
         ? null
         : Number(categoryForm.monthly_limit)
 
+      // is_income is only included if migration 020 has been applied; omit it otherwise to avoid "unknown column" errors
+      const incomeField = categoryForm.is_income ? { is_income: true } : {}
+
       if (editingCategory) {
         await supabase.from('budget_categories').update({
           name: categoryForm.name,
           monthly_limit,
           color: categoryForm.color || null,
           icon: categoryForm.icon || null,
-          is_income: categoryForm.is_income,
+          ...incomeField,
         }).eq('id', editingCategory.id)
 
         setEnvelopeCategories(prev => prev.map(cat =>
@@ -292,7 +304,7 @@ export default function BudgetPage() {
           monthly_limit,
           color: categoryForm.color || null,
           icon: categoryForm.icon || null,
-          is_income: categoryForm.is_income,
+          ...incomeField,
         }).select().single()
 
         if (data) {

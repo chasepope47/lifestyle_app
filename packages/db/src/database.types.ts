@@ -248,7 +248,7 @@ export interface Database {
           monthly_limit: number | null
           color: string | null
           icon: string | null
-          is_income: boolean
+          is_income?: boolean  // added by migration 020 — may not exist until migration runs
           created_at: string
         }
         Insert: {
