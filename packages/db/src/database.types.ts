@@ -248,6 +248,7 @@ export interface Database {
           monthly_limit: number | null
           color: string | null
           icon: string | null
+          is_income: boolean
           created_at: string
         }
         Insert: {
@@ -257,6 +258,7 @@ export interface Database {
           monthly_limit?: number | null
           color?: string | null
           icon?: string | null
+          is_income?: boolean
           created_at?: string
         }
         Update: {
@@ -266,6 +268,7 @@ export interface Database {
           monthly_limit?: number | null
           color?: string | null
           icon?: string | null
+          is_income?: boolean
           created_at?: string
         }
         Relationships: []

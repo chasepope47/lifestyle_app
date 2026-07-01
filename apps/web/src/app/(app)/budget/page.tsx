@@ -66,7 +66,7 @@ export default function BudgetPage() {
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [editingCategory, setEditingCategory] = useState<EnvelopeCategory | null>(null)
-  const [categoryForm, setCategoryForm] = useState({ name: '', monthly_limit: '', color: '', icon: '' })
+  const [categoryForm, setCategoryForm] = useState({ name: '', monthly_limit: '', color: '', icon: '', is_income: false })
   const [categorySaving, setCategorySaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -117,7 +117,7 @@ export default function BudgetPage() {
         .order('transaction_date', { ascending: false }),
       supabase
         .from('budget_categories')
-        .select('id, name, color, icon, monthly_limit')
+        .select('id, name, color, icon, monthly_limit, is_income')
         .eq('household_id', householdId)
         .order('name'),
       supabase
@@ -126,13 +126,17 @@ export default function BudgetPage() {
         .eq('household_id', householdId)
         .gte('transaction_date', startDate)
         .lte('transaction_date', endDate)
-        .lt('amount', 0),
-    ]).then(([txRes, catRes, spendRes]) => {
+        .not('category_id', 'is', null),
+    ]).then(([txRes, catRes, catTxRes]) => {
       setTransactions(txRes.data ?? [])
 
+      // Split by sign so expense cats track outflows and income cats track inflows
       const spendMap: Record<string, number> = {}
-      for (const tx of spendRes.data ?? []) {
-        if (tx.category_id) spendMap[tx.category_id] = (spendMap[tx.category_id] ?? 0) + Math.abs(tx.amount)
+      const incomeMap: Record<string, number> = {}
+      for (const tx of catTxRes.data ?? []) {
+        if (!tx.category_id) continue
+        if (tx.amount < 0) spendMap[tx.category_id] = (spendMap[tx.category_id] ?? 0) + Math.abs(tx.amount)
+        else incomeMap[tx.category_id] = (incomeMap[tx.category_id] ?? 0) + tx.amount
       }
       setEnvelopeCategories(
         (catRes.data ?? []).map(cat => ({
@@ -141,7 +145,8 @@ export default function BudgetPage() {
           color: cat.color,
           icon: cat.icon,
           monthly_limit: cat.monthly_limit,
-          spent: spendMap[cat.id] ?? 0,
+          is_income: cat.is_income ?? false,
+          spent: cat.is_income ? (incomeMap[cat.id] ?? 0) : (spendMap[cat.id] ?? 0),
         }))
       )
       setLoading(false)
@@ -165,7 +170,7 @@ export default function BudgetPage() {
     transfers: transactions.filter(t => t.category === 'transfers').reduce((s, t) => s + Math.abs(t.amount), 0),
   }
   const donutData: DonutSlice[] = envelopeCategories.length > 0
-    ? envelopeCategories.map(c => ({ key: c.id, label: c.name, color: c.color ?? '#7c3aed', value: c.spent }))
+    ? envelopeCategories.filter(c => !c.is_income).map(c => ({ key: c.id, label: c.name, color: c.color ?? '#7c3aed', value: c.spent }))
     : [
         { key: 'needs',     label: 'Needs',     color: '#60a5fa', value: categorySpending.needs },
         { key: 'wants',     label: 'Wants',     color: '#fbbf24', value: categorySpending.wants },
@@ -242,7 +247,7 @@ export default function BudgetPage() {
 
   const openAddCategory = () => {
     setEditingCategory(null)
-    setCategoryForm({ name: '', monthly_limit: '', color: '', icon: '' })
+    setCategoryForm({ name: '', monthly_limit: '', color: '', icon: '', is_income: false })
     setShowCategoryModal(true)
   }
 
@@ -253,6 +258,7 @@ export default function BudgetPage() {
       monthly_limit: cat.monthly_limit != null ? cat.monthly_limit.toString() : '',
       color: cat.color ?? '',
       icon: cat.icon ?? '',
+      is_income: cat.is_income,
     })
     setShowCategoryModal(true)
   }
@@ -271,11 +277,12 @@ export default function BudgetPage() {
           monthly_limit,
           color: categoryForm.color || null,
           icon: categoryForm.icon || null,
+          is_income: categoryForm.is_income,
         }).eq('id', editingCategory.id)
 
         setEnvelopeCategories(prev => prev.map(cat =>
           cat.id === editingCategory.id
-            ? { ...cat, name: categoryForm.name, monthly_limit, color: categoryForm.color || null, icon: categoryForm.icon || null }
+            ? { ...cat, name: categoryForm.name, monthly_limit, color: categoryForm.color || null, icon: categoryForm.icon || null, is_income: categoryForm.is_income }
             : cat
         ))
       } else {
@@ -285,6 +292,7 @@ export default function BudgetPage() {
           monthly_limit,
           color: categoryForm.color || null,
           icon: categoryForm.icon || null,
+          is_income: categoryForm.is_income,
         }).select().single()
 
         if (data) {
@@ -296,6 +304,7 @@ export default function BudgetPage() {
               color: data.color,
               icon: data.icon,
               monthly_limit: data.monthly_limit,
+              is_income: data.is_income ?? false,
               spent: 0,
             },
           ])
@@ -526,14 +535,38 @@ export default function BudgetPage() {
                   className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
               </div>
+              {/* Income toggle */}
+              <button
+                type="button"
+                onClick={() => setCategoryForm(p => ({ ...p, is_income: !p.is_income }))}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-colors ${
+                  categoryForm.is_income
+                    ? 'border-emerald-400 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20'
+                    : 'border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800'
+                }`}
+              >
+                <div className="text-left">
+                  <p className={`text-sm font-semibold ${categoryForm.is_income ? 'text-emerald-700 dark:text-emerald-300' : 'text-stone-700 dark:text-stone-300'}`}>
+                    Income category
+                  </p>
+                  <p className="text-xs text-stone-400 mt-0.5">
+                    {categoryForm.is_income ? 'Tracks money coming in (positive transactions)' : 'Tracks spending (negative transactions)'}
+                  </p>
+                </div>
+                <div className={`w-10 h-5 rounded-full transition-colors flex-shrink-0 relative ${categoryForm.is_income ? 'bg-emerald-500' : 'bg-stone-300 dark:bg-stone-600'}`}>
+                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${categoryForm.is_income ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                </div>
+              </button>
               <div>
-                <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Monthly limit</label>
+                <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">
+                  {categoryForm.is_income ? 'Monthly income target' : 'Monthly limit'}
+                </label>
                 <input
                   type="number"
                   step="0.01"
                   value={categoryForm.monthly_limit}
                   onChange={e => setCategoryForm(p => ({ ...p, monthly_limit: e.target.value }))}
-                  placeholder="Leave blank for no limit"
+                  placeholder={categoryForm.is_income ? 'Leave blank for no target' : 'Leave blank for no limit'}
                   className="w-full px-4 py-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-900 dark:text-stone-50 focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
               </div>

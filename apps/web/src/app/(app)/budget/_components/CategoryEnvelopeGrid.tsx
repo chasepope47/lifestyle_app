@@ -8,7 +8,8 @@ export interface EnvelopeCategory {
   color: string | null
   icon: string | null
   monthly_limit: number | null
-  spent: number
+  is_income: boolean
+  spent: number  // for expense cats = amount spent; for income cats = amount received
 }
 
 interface CategoryEnvelopeGridProps {
@@ -17,21 +18,28 @@ interface CategoryEnvelopeGridProps {
   onEditCategory?: (cat: EnvelopeCategory) => void
 }
 
-function getBarColor(pct: number): string {
+function getSpendBarColor(pct: number): string {
   if (pct >= 100) return '#f87171'
   if (pct >= 90)  return '#fb923c'
   if (pct >= 75)  return '#fbbf24'
   return '#34d399'
 }
 
-function EnvelopeCard({ cat, onEdit }: { cat: EnvelopeCategory; onEdit?: (cat: EnvelopeCategory) => void }) {
-  const hasLimit = cat.monthly_limit != null && cat.monthly_limit > 0
-  const pct = hasLimit ? Math.min(110, (cat.spent / cat.monthly_limit!) * 100) : 0
-  const remaining = hasLimit ? cat.monthly_limit! - cat.spent : 0
-  const isOver = hasLimit && cat.spent > cat.monthly_limit!
-  const barColor = getBarColor(pct)
+function getIncomeBarColor(pct: number): string {
+  if (pct >= 100) return '#34d399'
+  if (pct >= 75)  return '#fbbf24'
+  return '#f87171'
+}
 
-  const accentColor = cat.color && cat.color.startsWith('#') ? cat.color : '#7c3aed'
+function EnvelopeCard({ cat, onEdit }: { cat: EnvelopeCategory; onEdit?: (cat: EnvelopeCategory) => void }) {
+  const hasTarget = cat.monthly_limit != null && cat.monthly_limit > 0
+  const pct = hasTarget ? Math.min(110, (cat.spent / cat.monthly_limit!) * 100) : 0
+  const diff = hasTarget ? cat.monthly_limit! - cat.spent : 0
+  const isOver = hasTarget && cat.spent > cat.monthly_limit!
+  const barColor = cat.is_income ? getIncomeBarColor(pct) : getSpendBarColor(pct)
+
+  const defaultAccent = cat.is_income ? '#10b981' : '#7c3aed'
+  const accentColor = cat.color && cat.color.startsWith('#') ? cat.color : defaultAccent
 
   return (
     <div
@@ -58,14 +66,19 @@ function EnvelopeCard({ cat, onEdit }: { cat: EnvelopeCategory; onEdit?: (cat: E
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: accentColor }} />
             )}
           </div>
-          <p className="text-sm font-semibold text-stone-900 dark:text-stone-50 truncate">{cat.name}</p>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-stone-900 dark:text-stone-50 truncate">{cat.name}</p>
+            {cat.is_income && (
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-500 leading-none mt-0.5">Income</p>
+            )}
+          </div>
         </div>
         <p className="text-sm font-bold text-stone-900 dark:text-stone-50 ml-2 flex-shrink-0">
           {formatCurrency(cat.spent)}
         </p>
       </div>
 
-      {hasLimit ? (
+      {hasTarget ? (
         <>
           <div className="h-1.5 rounded-full mb-1.5 bg-stone-100 dark:bg-stone-800">
             <div
@@ -74,16 +87,28 @@ function EnvelopeCard({ cat, onEdit }: { cat: EnvelopeCategory; onEdit?: (cat: E
             />
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-stone-400">{pct.toFixed(0)}% of {formatCurrency(cat.monthly_limit!)}</span>
-            {isOver ? (
-              <span className="font-semibold" style={{ color: '#f87171' }}>{formatCurrency(Math.abs(remaining))} over</span>
+            <span className="text-stone-400">
+              {pct.toFixed(0)}% of {formatCurrency(cat.monthly_limit!)} {cat.is_income ? 'goal' : ''}
+            </span>
+            {cat.is_income ? (
+              isOver ? (
+                <span className="font-semibold" style={{ color: '#34d399' }}>Goal met ✓</span>
+              ) : (
+                <span className="text-stone-400">{formatCurrency(Math.abs(diff))} to go</span>
+              )
             ) : (
-              <span className="text-stone-400">{formatCurrency(remaining)} left</span>
+              isOver ? (
+                <span className="font-semibold" style={{ color: '#f87171' }}>{formatCurrency(Math.abs(diff))} over</span>
+              ) : (
+                <span className="text-stone-400">{formatCurrency(diff)} left</span>
+              )
             )}
           </div>
         </>
       ) : (
-        <p className="text-xs text-stone-400 italic">No limit set</p>
+        <p className="text-xs text-stone-400 italic">
+          {cat.is_income ? 'No income target set' : 'No limit set'}
+        </p>
       )}
     </div>
   )
