@@ -246,6 +246,9 @@ export default function PantryPage() {
     (acc[meal.planned_date] ||= []).push(meal)
     return acc
   }, {} as Record<string, MealPlan[]>)
+  for (const meals of Object.values(groupedMealPlans)) {
+    meals.sort((a, b) => MEAL_TYPES.indexOf(a.meal_type) - MEAL_TYPES.indexOf(b.meal_type))
+  }
 
   if (loading) return <div className="p-8 text-stone-400">Loading…</div>
 
