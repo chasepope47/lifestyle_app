@@ -32,7 +32,7 @@ Database notes:
 
 Tool use rules:
 - Read tools (get_pantry_items, get_meal_plans) are safe — call as many as you need to answer the user's question accurately, e.g. check what's on hand before suggesting a recipe.
-- Write tools (create_meal_plan, update_meal_plan, delete_meal_plan) are NEVER executed automatically. When you call one, the app shows the user a confirmation card and only writes if they approve. Because of this: call AT MOST ONE write tool per response, briefly state in your text what you're proposing and why, then stop — do not call further tools after a write tool in the same turn.
+- Write tools (create_meal_plan, update_meal_plan, delete_meal_plan) are NEVER executed automatically. When you call one, the app shows the user a confirmation list and only writes if they approve. If the user asks for a single change, call exactly one write tool. If they ask for multiple at once (e.g. "add them all", "plan all four"), call one write tool per item in that same turn — each becomes its own line in the confirmation list. Briefly state in your text what you're proposing, then stop — do not call read tools after any write tool in the same turn.
 - Keep responses concise and conversational; this is a chat widget, not a report.`
 }
 
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       parts: [{ text: m.content }],
     }))
 
-    let pendingAction: { tool: string; input: Record<string, unknown> } | null = null
+    let pendingActions: { tool: string; input: Record<string, unknown> }[] = []
     let finalText = ''
 
     for (let turn = 0; turn < MAX_TOOL_TURNS; turn++) {
@@ -85,9 +85,9 @@ export async function POST(request: NextRequest) {
       if (text) finalText = text
 
       const functionCalls = result.functionCalls ?? []
-      const writeCall = functionCalls.find(fc => fc.name && WRITE_TOOL_NAMES.has(fc.name))
-      if (writeCall) {
-        pendingAction = { tool: writeCall.name!, input: (writeCall.args ?? {}) as Record<string, unknown> }
+      const writeCalls = functionCalls.filter(fc => fc.name && WRITE_TOOL_NAMES.has(fc.name))
+      if (writeCalls.length > 0) {
+        pendingActions = writeCalls.map(fc => ({ tool: fc.name!, input: (fc.args ?? {}) as Record<string, unknown> }))
         break
       }
 
@@ -106,12 +106,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (!finalText) {
-      finalText = pendingAction
-        ? `I'd like to ${pendingAction.tool.replace(/_/g, ' ')} — please review and approve below.`
+      finalText = pendingActions.length > 0
+        ? `I'd like to make ${pendingActions.length > 1 ? `${pendingActions.length} changes` : 'a change'} — please review and approve below.`
         : "I wasn't able to come up with a response — could you rephrase that?"
     }
 
-    return NextResponse.json({ message: finalText, pendingAction })
+    return NextResponse.json({ message: finalText, pendingActions })
   } catch (error) {
     console.error('Pantry assistant error:', error)
     return NextResponse.json(

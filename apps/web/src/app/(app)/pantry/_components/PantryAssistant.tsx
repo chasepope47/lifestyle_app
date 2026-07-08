@@ -43,7 +43,7 @@ export function PantryAssistant({ householdId, activeTab, onDataChanged }: Pantr
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
+  const [pendingActions, setPendingActions] = useState<PendingAction[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isApplying, setIsApplying] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -51,13 +51,13 @@ export function PantryAssistant({ householdId, activeTab, onDataChanged }: Pantr
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages, pendingAction, isLoading])
+  }, [messages, pendingActions, isLoading])
 
   const send = async () => {
     const text = input.trim()
     if (!text || isLoading) return
     setError(null)
-    setPendingAction(null)
+    setPendingActions([])
     const nextMessages = [...messages, { role: 'user' as const, content: text }]
     setMessages(nextMessages)
     setInput('')
@@ -71,7 +71,7 @@ export function PantryAssistant({ householdId, activeTab, onDataChanged }: Pantr
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Request failed')
       setMessages(prev => [...prev, { role: 'assistant', content: data.message }])
-      if (data.pendingAction) setPendingAction(data.pendingAction)
+      if (Array.isArray(data.pendingActions) && data.pendingActions.length > 0) setPendingActions(data.pendingActions)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
@@ -79,20 +79,25 @@ export function PantryAssistant({ householdId, activeTab, onDataChanged }: Pantr
     }
   }
 
-  const approve = async () => {
-    if (!pendingAction || isApplying) return
+  const approveAll = async () => {
+    if (pendingActions.length === 0 || isApplying) return
     setIsApplying(true)
     setError(null)
     try {
-      const res = await fetch('/api/pantry/assistant/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ householdId, tool: pendingAction.tool, input: pendingAction.input }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to apply change')
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Done — applied that change.' }])
-      setPendingAction(null)
+      for (const action of pendingActions) {
+        const res = await fetch('/api/pantry/assistant/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ householdId, tool: action.tool, input: action.input }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to apply change')
+      }
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: pendingActions.length > 1 ? `Done — applied ${pendingActions.length} changes.` : 'Done — applied that change.',
+      }])
+      setPendingActions([])
       onDataChanged()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to apply change')
@@ -101,9 +106,9 @@ export function PantryAssistant({ householdId, activeTab, onDataChanged }: Pantr
     }
   }
 
-  const reject = () => {
+  const rejectAll = () => {
     setMessages(prev => [...prev, { role: 'assistant', content: 'Cancelled — no changes made.' }])
-    setPendingAction(null)
+    setPendingActions([])
   }
 
   return (
@@ -144,20 +149,24 @@ export function PantryAssistant({ householdId, activeTab, onDataChanged }: Pantr
               </div>
             ))}
 
-            {pendingAction && (
+            {pendingActions.length > 0 && (
               <div className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-3">
-                <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 mb-2">{describeAction(pendingAction)}</p>
+                <ul className="space-y-1.5 mb-2">
+                  {pendingActions.map((action, i) => (
+                    <li key={i} className="text-xs font-semibold text-amber-700 dark:text-amber-300">{describeAction(action)}</li>
+                  ))}
+                </ul>
                 <div className="flex gap-2">
                   <button
-                    onClick={approve}
+                    onClick={approveAll}
                     disabled={isApplying}
                     className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold disabled:opacity-60 transition-colors"
                   >
                     {isApplying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                    Approve
+                    {pendingActions.length > 1 ? `Approve All (${pendingActions.length})` : 'Approve'}
                   </button>
                   <button
-                    onClick={reject}
+                    onClick={rejectAll}
                     disabled={isApplying}
                     className="flex-1 px-3 py-1.5 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 text-xs font-semibold hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-60 transition-colors"
                   >
