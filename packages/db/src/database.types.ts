@@ -180,6 +180,8 @@ export interface Database {
           meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
           recipe_name: string
           notes: string | null
+          ingredients: string[] | null
+          instructions: string | null
           created_at: string
         }
         Insert: {
@@ -190,6 +192,8 @@ export interface Database {
           meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
           recipe_name: string
           notes?: string | null
+          ingredients?: string[] | null
+          instructions?: string | null
           created_at?: string
         }
         Update: {
@@ -200,6 +204,8 @@ export interface Database {
           meal_type?: 'breakfast' | 'lunch' | 'dinner' | 'snack'
           recipe_name?: string
           notes?: string | null
+          ingredients?: string[] | null
+          instructions?: string | null
           created_at?: string
         }
         Relationships: []

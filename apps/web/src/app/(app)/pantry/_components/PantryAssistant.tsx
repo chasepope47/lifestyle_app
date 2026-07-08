@@ -25,8 +25,11 @@ function shortId(id: unknown): string {
 function describeAction(action: PendingAction): string {
   const { tool, input } = action
   switch (tool) {
-    case 'create_meal_plan':
-      return `Add "${input.recipe_name}" for ${input.meal_type} on ${input.planned_date}`
+    case 'create_meal_plan': {
+      const ingredientCount = Array.isArray(input.ingredients) ? input.ingredients.length : 0
+      const recipeNote = ingredientCount > 0 ? ` — full recipe with ${ingredientCount} ingredients` : ''
+      return `Add "${input.recipe_name}" for ${input.meal_type} on ${input.planned_date}${recipeNote}`
+    }
     case 'update_meal_plan':
       return `Update meal plan ${shortId(input.id)}`
     case 'delete_meal_plan':

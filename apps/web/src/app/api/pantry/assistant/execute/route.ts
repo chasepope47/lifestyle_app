@@ -39,6 +39,8 @@ export async function POST(request: NextRequest) {
             meal_type: c.meal_type,
             recipe_name: c.recipe_name,
             notes: c.notes,
+            ingredients: c.ingredients,
+            instructions: c.instructions,
           })
           .select()
           .single()
