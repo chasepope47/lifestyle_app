@@ -5,10 +5,12 @@ import { PageHero } from '@/components/layout/PageHero'
 import { ModulePage } from '@/components/layout/ModulePage'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { createClient } from '@/lib/supabase/client'
-import { getExpirationStatus, expirationBadgeClasses, formatExpirationLabel } from '@lifestyle/shared'
+import { getExpirationStatus, expirationBadgeClasses, formatExpirationLabel, MEAL_TYPES } from '@lifestyle/shared'
 import type { Database } from '@lifestyle/db'
+import { PantryAssistant } from './_components/PantryAssistant'
 
 type PantryItem = Database['public']['Tables']['pantry_items']['Row']
+type MealPlan = Database['public']['Tables']['meal_plans']['Row']
 
 const CATEGORIES = ['Produce', 'Dairy', 'Meat & Seafood', 'Frozen', 'Pantry', 'Snacks', 'Beverages', 'Other']
 const STORES = ['Costco', 'Walmart', 'Amazon', "Sam's Club", 'Target', 'Whole Foods', 'No store']
@@ -22,24 +24,39 @@ const CATEGORY_ICONS: Record<string, string> = {
   'Beverages': '🥤',
   'Other': '📦',
 }
+const MEAL_TYPE_ICONS: Record<string, string> = {
+  breakfast: '🍳',
+  lunch: '🥪',
+  dinner: '🍽️',
+  snack: '🍎',
+}
 
 export default function PantryPage() {
   const { householdId } = useHousehold()
   const supabase = createClient()
   const [items, setItems] = useState<PantryItem[]>([])
+  const [mealPlans, setMealPlans] = useState<MealPlan[]>([])
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
-  const [activeTab, setActiveTab] = useState<'pantry' | 'shopping'>('pantry')
+  const [activeTab, setActiveTab] = useState<'pantry' | 'shopping' | 'mealplans'>('pantry')
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState({ name: '', category: '', quantity: '1', unit: '', price: '', expiration_date: '', store: 'No store' })
   const [restocking, setRestocking] = useState<PantryItem | null>(null)
   const [restockForm, setRestockForm] = useState({ quantity: '1', expiration_date: '', price: '', store: '' })
+  const [showAddMeal, setShowAddMeal] = useState(false)
+  const [mealForm, setMealForm] = useState<{ planned_date: string; meal_type: MealPlan['meal_type']; recipe_name: string; notes: string }>({
+    planned_date: '', meal_type: 'dinner', recipe_name: '', notes: '',
+  })
 
   const load = async () => {
     if (!householdId) return
-    const { data } = await supabase.from('pantry_items').select('*').eq('household_id', householdId).order('name')
-    setItems(data ?? [])
+    const [itemsRes, mealsRes] = await Promise.all([
+      supabase.from('pantry_items').select('*').eq('household_id', householdId).order('name'),
+      supabase.from('meal_plans').select('*').eq('household_id', householdId).order('planned_date'),
+    ])
+    setItems(itemsRes.data ?? [])
+    setMealPlans(mealsRes.data ?? [])
     setLoading(false)
   }
 
@@ -98,6 +115,29 @@ export default function PantryPage() {
     setRestocking(null)
   }
 
+  const addMealPlan = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!householdId || !mealForm.planned_date || !mealForm.recipe_name) return
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase.from('meal_plans').insert({
+      household_id: householdId,
+      user_id: user.id,
+      planned_date: mealForm.planned_date,
+      meal_type: mealForm.meal_type,
+      recipe_name: mealForm.recipe_name,
+      notes: mealForm.notes || null,
+    }).select().single()
+    if (data) setMealPlans(prev => [...prev, data].sort((a, b) => a.planned_date.localeCompare(b.planned_date)))
+    setShowAddMeal(false)
+    setMealForm({ planned_date: '', meal_type: 'dinner', recipe_name: '', notes: '' })
+  }
+
+  const deleteMealPlan = async (id: string) => {
+    await supabase.from('meal_plans').delete().eq('id', id)
+    setMealPlans(prev => prev.filter(m => m.id !== id))
+  }
+
   const filtered = items.filter(i => {
     const matchesSearch = i.name.toLowerCase().includes(search.toLowerCase())
     const matchesCategory = selectedCategory === 'All' || i.category === selectedCategory
@@ -130,6 +170,11 @@ export default function PantryPage() {
     }
     return acc
   }, {} as Record<string, PantryItem[]>)
+
+  const groupedMealPlans = mealPlans.reduce((acc, meal) => {
+    (acc[meal.planned_date] ||= []).push(meal)
+    return acc
+  }, {} as Record<string, MealPlan[]>)
 
   if (loading) return <div className="p-8 text-stone-400">Loading…</div>
 
@@ -179,9 +224,71 @@ export default function PantryPage() {
             </span>
           )}
         </button>
+        <button
+          onClick={() => setActiveTab('mealplans')}
+          className={`pb-3 px-2 font-medium transition-colors ${
+            activeTab === 'mealplans'
+              ? 'text-stone-50 border-b-2 border-yellow-500'
+              : 'text-stone-400 hover:text-stone-200'
+          }`}
+        >
+          Meal Plans
+        </button>
       </div>
 
-      {activeTab === 'pantry' ? (
+      {activeTab === 'mealplans' ? (
+        <>
+          {/* Meal Plans tab */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-stone-50">Meal Plans</h2>
+              <button
+                onClick={() => setShowAddMeal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-900 transition-colors"
+                style={{ background: '#fbbf24' }}
+              >
+                <Plus className="w-3.5 h-3.5" /> Add Meal
+              </button>
+            </div>
+            {mealPlans.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-stone-700 p-8 text-center text-stone-400">
+                No meals planned yet. Add one, or ask the assistant to suggest something.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {Object.entries(groupedMealPlans).map(([date, meals]) => (
+                  <div key={date}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm font-semibold text-stone-300">
+                        {new Date(date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {meals.map(meal => (
+                        <div key={meal.id} className="flex items-center justify-between rounded-lg bg-stone-800/50 border border-stone-700 px-4 py-3 group hover:bg-stone-800 transition-colors">
+                          <div className="flex-1">
+                            <p className="font-medium text-stone-50">{MEAL_TYPE_ICONS[meal.meal_type] || '🍽️'} {meal.recipe_name}</p>
+                            <div className="flex items-center gap-2 mt-1 text-xs text-stone-400">
+                              <span className="capitalize">{meal.meal_type}</span>
+                              {meal.notes && <><span>•</span><span>{meal.notes}</span></>}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => deleteMealPlan(meal.id)}
+                            className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
+                          >
+                            <Trash2 className="w-4 h-4 text-stone-400" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      ) : activeTab === 'pantry' ? (
         <>
           {/* Search */}
           <div className="relative mb-6">
@@ -272,16 +379,10 @@ export default function PantryPage() {
                               )}
                               <button
                                 onClick={() => updateItem(item.id, { quantity: 0 })}
-                                title="Mark as used up"
+                                title="Remove from pantry (moves to Shopping)"
                                 className="p-2 opacity-0 group-hover:opacity-100 hover:bg-amber-500/10 rounded transition-all"
                               >
                                 <ShoppingCart className="w-4 h-4 text-amber-400" />
-                              </button>
-                              <button
-                                onClick={() => deleteItem(item.id)}
-                                className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
-                              >
-                                <Trash2 className="w-4 h-4 text-stone-400" />
                               </button>
                             </div>
                           </div>
@@ -545,7 +646,78 @@ export default function PantryPage() {
           </div>
         </div>
       )}
+
+      {/* Add Meal Modal */}
+      {showAddMeal && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+          <div className="bg-stone-900 w-full sm:max-w-md sm:rounded-2xl max-h-screen overflow-y-auto flex flex-col">
+            <div className="sticky top-0 bg-stone-900 border-b border-stone-700 px-6 py-4 flex items-center gap-3">
+              <button onClick={() => setShowAddMeal(false)} className="p-1 hover:bg-stone-800 rounded">
+                <ArrowLeft className="w-5 h-5 text-stone-50" />
+              </button>
+              <h1 className="text-lg font-semibold text-stone-50">Add Meal</h1>
+            </div>
+            <form onSubmit={addMealPlan} className="flex-1 px-6 py-4 space-y-4">
+              <div>
+                <label className="text-sm font-medium text-stone-300 mb-2 block">Date *</label>
+                <input
+                  type="date"
+                  required
+                  value={mealForm.planned_date}
+                  onChange={e => setMealForm(p => ({ ...p, planned_date: e.target.value }))}
+                  className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-300 mb-2 block">Meal</label>
+                <select
+                  value={mealForm.meal_type}
+                  onChange={e => setMealForm(p => ({ ...p, meal_type: e.target.value as MealPlan['meal_type'] }))}
+                  className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                >
+                  {MEAL_TYPES.map(t => (
+                    <option key={t} value={t}>{MEAL_TYPE_ICONS[t]} {t[0].toUpperCase() + t.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-300 mb-2 block">Recipe *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Chicken Stir Fry"
+                  value={mealForm.recipe_name}
+                  onChange={e => setMealForm(p => ({ ...p, recipe_name: e.target.value }))}
+                  className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-300 mb-2 block">Notes (optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Use up the broccoli"
+                  value={mealForm.notes}
+                  onChange={e => setMealForm(p => ({ ...p, notes: e.target.value }))}
+                  className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+              </div>
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  className="w-full py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors"
+                >
+                  Add to Meal Plan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       </div>
+
+      {householdId && (
+        <PantryAssistant householdId={householdId} activeTab={activeTab} onDataChanged={load} />
+      )}
     </ModulePage>
   )
 }
