@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { READ_TOOLS, WRITE_TOOLS, WRITE_TOOL_NAMES } from './_lib/tools'
 import { executeReadTool } from './_lib/readTools'
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
+const MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite'
 const MAX_TOOL_TURNS = 6
 
 function getGeminiClient() {
