@@ -38,9 +38,10 @@ export const WRITE_TOOLS: FunctionDeclaration[] = [
   {
     name: 'create_meal_plan',
     description:
-      'Propose adding a planned meal to the meal plan. Whenever you propose a meal, include the ' +
-      'full recipe (ingredients and instructions) so the user can open it and see everything they need — ' +
-      'not just the name.',
+      'Propose adding a planned meal to the meal plan, with its full recipe attached. ' +
+      'ingredients and instructions are REQUIRED — the user opens the planned meal to see exactly ' +
+      "what to buy and do, so a name alone is not useful. If it's a quick placeholder (e.g. takeout), " +
+      "still fill in something reasonable, e.g. ingredients: ['(order from usual place)'], instructions: 'Order and pick up.'",
     parameters: {
       type: Type.OBJECT,
       properties: {
@@ -51,11 +52,11 @@ export const WRITE_TOOLS: FunctionDeclaration[] = [
         ingredients: {
           type: Type.ARRAY,
           items: { type: Type.STRING },
-          description: "The full ingredient list, one item per entry, e.g. '2 chicken breasts', '1/4 cup teriyaki sauce'.",
+          description: "Required. The full ingredient list, one item per entry, e.g. '2 chicken breasts', '1/4 cup teriyaki sauce'.",
         },
-        instructions: { type: Type.STRING, description: 'Step-by-step cooking instructions, as plain text (steps can be newline-separated).' },
+        instructions: { type: Type.STRING, description: 'Required. Step-by-step cooking instructions, as plain text (steps can be newline-separated).' },
       },
-      required: ['planned_date', 'meal_type', 'recipe_name'],
+      required: ['planned_date', 'meal_type', 'recipe_name', 'ingredients', 'instructions'],
     },
   },
   {
@@ -99,8 +100,8 @@ export const writeToolSchemas = {
     meal_type: MEAL_TYPE_ENUM,
     recipe_name: z.string().min(1),
     notes: z.string().optional(),
-    ingredients: z.array(z.string()).optional(),
-    instructions: z.string().optional(),
+    ingredients: z.array(z.string()).min(1),
+    instructions: z.string().min(1),
   }),
   update_meal_plan: z.object({
     id: z.string().uuid(),

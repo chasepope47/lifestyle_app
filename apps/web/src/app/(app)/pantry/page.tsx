@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Plus, Search, Trash2, ArrowLeft, Barcode, ShoppingCart, PackagePlus } from 'lucide-react'
+import { Plus, Search, Trash2, ArrowLeft, Barcode, ShoppingCart, PackagePlus, Pencil } from 'lucide-react'
 import { PageHero } from '@/components/layout/PageHero'
 import { ModulePage } from '@/components/layout/ModulePage'
 import { useHousehold } from '@/providers/HouseholdProvider'
@@ -49,6 +49,7 @@ export default function PantryPage() {
     planned_date: '', meal_type: 'dinner', recipe_name: '', notes: '', ingredients: '', instructions: '',
   })
   const [viewingMeal, setViewingMeal] = useState<MealPlan | null>(null)
+  const [editingMeal, setEditingMeal] = useState(false)
 
   const load = async () => {
     if (!householdId) return
@@ -135,6 +136,37 @@ export default function PantryPage() {
     if (data) setMealPlans(prev => [...prev, data].sort((a, b) => a.planned_date.localeCompare(b.planned_date)))
     setShowAddMeal(false)
     setMealForm({ planned_date: '', meal_type: 'dinner', recipe_name: '', notes: '', ingredients: '', instructions: '' })
+  }
+
+  const openEditMeal = (meal: MealPlan) => {
+    setMealForm({
+      planned_date: meal.planned_date,
+      meal_type: meal.meal_type,
+      recipe_name: meal.recipe_name,
+      notes: meal.notes ?? '',
+      ingredients: (meal.ingredients ?? []).join('\n'),
+      instructions: meal.instructions ?? '',
+    })
+    setEditingMeal(true)
+  }
+
+  const submitEditMeal = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!viewingMeal) return
+    const ingredients = mealForm.ingredients.split('\n').map(s => s.trim()).filter(Boolean)
+    const { data } = await supabase.from('meal_plans').update({
+      planned_date: mealForm.planned_date,
+      meal_type: mealForm.meal_type,
+      recipe_name: mealForm.recipe_name,
+      notes: mealForm.notes || null,
+      ingredients: ingredients.length > 0 ? ingredients : null,
+      instructions: mealForm.instructions || null,
+    }).eq('id', viewingMeal.id).select().single()
+    if (data) {
+      setMealPlans(prev => prev.map(m => m.id === data.id ? data : m))
+      setViewingMeal(data)
+    }
+    setEditingMeal(false)
   }
 
   const deleteMealPlan = async (id: string) => {
@@ -247,7 +279,10 @@ export default function PantryPage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-stone-50">Meal Plans</h2>
               <button
-                onClick={() => setShowAddMeal(true)}
+                onClick={() => {
+                  setMealForm({ planned_date: '', meal_type: 'dinner', recipe_name: '', notes: '', ingredients: '', instructions: '' })
+                  setShowAddMeal(true)
+                }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-900 transition-colors"
                 style={{ background: '#fbbf24' }}
               >
@@ -748,50 +783,141 @@ export default function PantryPage() {
         <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
           <div className="bg-stone-900 w-full sm:max-w-md sm:rounded-2xl max-h-screen overflow-y-auto flex flex-col">
             <div className="sticky top-0 bg-stone-900 border-b border-stone-700 px-6 py-4 flex items-center gap-3">
-              <button onClick={() => setViewingMeal(null)} className="p-1 hover:bg-stone-800 rounded">
+              <button onClick={() => { setViewingMeal(null); setEditingMeal(false) }} className="p-1 hover:bg-stone-800 rounded">
                 <ArrowLeft className="w-5 h-5 text-stone-50" />
               </button>
-              <div>
-                <h1 className="text-lg font-semibold text-stone-50">{MEAL_TYPE_ICONS[viewingMeal.meal_type] || '🍽️'} {viewingMeal.recipe_name}</h1>
-                <p className="text-xs text-stone-400 capitalize">
-                  {viewingMeal.meal_type} • {new Date(viewingMeal.planned_date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
-                </p>
+              <div className="flex-1">
+                <h1 className="text-lg font-semibold text-stone-50">
+                  {editingMeal ? 'Edit Meal' : `${MEAL_TYPE_ICONS[viewingMeal.meal_type] || '🍽️'} ${viewingMeal.recipe_name}`}
+                </h1>
+                {!editingMeal && (
+                  <p className="text-xs text-stone-400 capitalize">
+                    {viewingMeal.meal_type} • {new Date(viewingMeal.planned_date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+                  </p>
+                )}
               </div>
-            </div>
-            <div className="px-6 py-4 space-y-5">
-              {viewingMeal.notes && (
-                <p className="text-sm text-stone-300">{viewingMeal.notes}</p>
+              {!editingMeal && (
+                <button onClick={() => openEditMeal(viewingMeal)} title="Edit" className="p-2 hover:bg-stone-800 rounded">
+                  <Pencil className="w-4 h-4 text-stone-400" />
+                </button>
               )}
-              <div>
-                <h2 className="text-sm font-semibold text-stone-50 mb-2">Ingredients</h2>
-                {viewingMeal.ingredients && viewingMeal.ingredients.length > 0 ? (
-                  <ul className="space-y-1.5">
-                    {viewingMeal.ingredients.map((ing, i) => (
-                      <li key={i} className="text-sm text-stone-300 flex items-start gap-2">
-                        <span className="text-yellow-500 mt-0.5">•</span>
-                        <span>{ing}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-stone-400">No ingredient list yet — ask the Meal Assistant to fill this in.</p>
-                )}
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-stone-50 mb-2">Instructions</h2>
-                {viewingMeal.instructions ? (
-                  <p className="text-sm text-stone-300 whitespace-pre-wrap">{viewingMeal.instructions}</p>
-                ) : (
-                  <p className="text-sm text-stone-400">No instructions yet — ask the Meal Assistant to fill this in.</p>
-                )}
-              </div>
-              <button
-                onClick={() => { deleteMealPlan(viewingMeal.id); setViewingMeal(null) }}
-                className="w-full py-3 rounded-lg border border-stone-700 text-stone-400 hover:bg-stone-800 hover:text-stone-200 font-semibold transition-colors flex items-center justify-center gap-2"
-              >
-                <Trash2 className="w-4 h-4" /> Remove from Meal Plan
-              </button>
             </div>
+
+            {editingMeal ? (
+              <form onSubmit={submitEditMeal} className="px-6 py-4 space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-stone-300 mb-2 block">Date *</label>
+                  <input
+                    type="date"
+                    required
+                    value={mealForm.planned_date}
+                    onChange={e => setMealForm(p => ({ ...p, planned_date: e.target.value }))}
+                    className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-stone-300 mb-2 block">Meal</label>
+                  <select
+                    value={mealForm.meal_type}
+                    onChange={e => setMealForm(p => ({ ...p, meal_type: e.target.value as MealPlan['meal_type'] }))}
+                    className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  >
+                    {MEAL_TYPES.map(t => (
+                      <option key={t} value={t}>{MEAL_TYPE_ICONS[t]} {t[0].toUpperCase() + t.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-stone-300 mb-2 block">Recipe *</label>
+                  <input
+                    type="text"
+                    required
+                    value={mealForm.recipe_name}
+                    onChange={e => setMealForm(p => ({ ...p, recipe_name: e.target.value }))}
+                    className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-stone-300 mb-2 block">Notes (optional)</label>
+                  <input
+                    type="text"
+                    value={mealForm.notes}
+                    onChange={e => setMealForm(p => ({ ...p, notes: e.target.value }))}
+                    className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-stone-300 mb-2 block">Ingredients (one per line)</label>
+                  <textarea
+                    rows={5}
+                    placeholder={'2 chicken breasts\n1/4 cup teriyaki sauce\n2 cups rice'}
+                    value={mealForm.ingredients}
+                    onChange={e => setMealForm(p => ({ ...p, ingredients: e.target.value }))}
+                    className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-stone-300 mb-2 block">Instructions</label>
+                  <textarea
+                    rows={5}
+                    placeholder="1. Cook rice. 2. Sear chicken. 3. Toss with sauce…"
+                    value={mealForm.instructions}
+                    onChange={e => setMealForm(p => ({ ...p, instructions: e.target.value }))}
+                    className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                </div>
+                <div className="pt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingMeal(false)}
+                    className="flex-1 py-3 rounded-lg border border-stone-700 text-stone-300 hover:bg-stone-800 font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors"
+                  >
+                    Save
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="px-6 py-4 space-y-5">
+                {viewingMeal.notes && (
+                  <p className="text-sm text-stone-300">{viewingMeal.notes}</p>
+                )}
+                <div>
+                  <h2 className="text-sm font-semibold text-stone-50 mb-2">Ingredients</h2>
+                  {viewingMeal.ingredients && viewingMeal.ingredients.length > 0 ? (
+                    <ul className="space-y-1.5">
+                      {viewingMeal.ingredients.map((ing, i) => (
+                        <li key={i} className="text-sm text-stone-300 flex items-start gap-2">
+                          <span className="text-yellow-500 mt-0.5">•</span>
+                          <span>{ing}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-stone-400">No ingredient list yet — tap the pencil to add one, or ask the Meal Assistant to fill this in.</p>
+                  )}
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-stone-50 mb-2">Instructions</h2>
+                  {viewingMeal.instructions ? (
+                    <p className="text-sm text-stone-300 whitespace-pre-wrap">{viewingMeal.instructions}</p>
+                  ) : (
+                    <p className="text-sm text-stone-400">No instructions yet — tap the pencil to add some, or ask the Meal Assistant to fill this in.</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => { deleteMealPlan(viewingMeal.id); setViewingMeal(null) }}
+                  className="w-full py-3 rounded-lg border border-stone-700 text-stone-400 hover:bg-stone-800 hover:text-stone-200 font-semibold transition-colors flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" /> Remove from Meal Plan
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
