@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { SchemaType, type FunctionDeclaration } from '@google/generative-ai'
+import { Type, type FunctionDeclaration } from '@google/genai'
 
 // --- Read tools (auto-executed server-side, scoped to the household via RLS) ---
 
@@ -11,11 +11,11 @@ export const READ_TOOLS: FunctionDeclaration[] = [
       "('active': not empty and not expired/critical), what needs restocking " +
       "('needs_restock': empty, or expired/critical/soon), or 'all'. Defaults to 'active'.",
     parameters: {
-      type: SchemaType.OBJECT,
+      type: Type.OBJECT,
       properties: {
-        status: { type: SchemaType.STRING, description: "One of 'active', 'needs_restock', 'all'. Defaults to 'active'." },
-        category: { type: SchemaType.STRING, description: 'Filter to a single category, e.g. Produce, Dairy, Frozen' },
-        search: { type: SchemaType.STRING, description: 'Case-insensitive match against item name' },
+        status: { type: Type.STRING, description: "One of 'active', 'needs_restock', 'all'. Defaults to 'active'." },
+        category: { type: Type.STRING, description: 'Filter to a single category, e.g. Produce, Dairy, Frozen' },
+        search: { type: Type.STRING, description: 'Case-insensitive match against item name' },
       },
     },
   },
@@ -23,10 +23,10 @@ export const READ_TOOLS: FunctionDeclaration[] = [
     name: 'get_meal_plans',
     description: "List the household's planned meals in a date range (defaults to the next 7 days).",
     parameters: {
-      type: SchemaType.OBJECT,
+      type: Type.OBJECT,
       properties: {
-        start_date: { type: SchemaType.STRING, description: 'YYYY-MM-DD, inclusive. Defaults to today.' },
-        end_date: { type: SchemaType.STRING, description: 'YYYY-MM-DD, inclusive. Defaults to 7 days from today.' },
+        start_date: { type: Type.STRING, description: 'YYYY-MM-DD, inclusive. Defaults to today.' },
+        end_date: { type: Type.STRING, description: 'YYYY-MM-DD, inclusive. Defaults to 7 days from today.' },
       },
     },
   },
@@ -39,12 +39,12 @@ export const WRITE_TOOLS: FunctionDeclaration[] = [
     name: 'create_meal_plan',
     description: 'Propose adding a planned meal to the meal plan.',
     parameters: {
-      type: SchemaType.OBJECT,
+      type: Type.OBJECT,
       properties: {
-        planned_date: { type: SchemaType.STRING, description: 'YYYY-MM-DD' },
-        meal_type: { type: SchemaType.STRING, description: 'One of: breakfast, lunch, dinner, snack' },
-        recipe_name: { type: SchemaType.STRING },
-        notes: { type: SchemaType.STRING, description: 'Optional, e.g. which pantry items it uses up' },
+        planned_date: { type: Type.STRING, description: 'YYYY-MM-DD' },
+        meal_type: { type: Type.STRING, description: 'One of: breakfast, lunch, dinner, snack' },
+        recipe_name: { type: Type.STRING },
+        notes: { type: Type.STRING, description: 'Optional, e.g. which pantry items it uses up' },
       },
       required: ['planned_date', 'meal_type', 'recipe_name'],
     },
@@ -53,13 +53,13 @@ export const WRITE_TOOLS: FunctionDeclaration[] = [
     name: 'update_meal_plan',
     description: 'Propose updating an existing planned meal. Only include fields that should change.',
     parameters: {
-      type: SchemaType.OBJECT,
+      type: Type.OBJECT,
       properties: {
-        id: { type: SchemaType.STRING },
-        planned_date: { type: SchemaType.STRING },
-        meal_type: { type: SchemaType.STRING },
-        recipe_name: { type: SchemaType.STRING },
-        notes: { type: SchemaType.STRING },
+        id: { type: Type.STRING },
+        planned_date: { type: Type.STRING },
+        meal_type: { type: Type.STRING },
+        recipe_name: { type: Type.STRING },
+        notes: { type: Type.STRING },
       },
       required: ['id'],
     },
@@ -68,8 +68,8 @@ export const WRITE_TOOLS: FunctionDeclaration[] = [
     name: 'delete_meal_plan',
     description: 'Propose removing a planned meal.',
     parameters: {
-      type: SchemaType.OBJECT,
-      properties: { id: { type: SchemaType.STRING } },
+      type: Type.OBJECT,
+      properties: { id: { type: Type.STRING } },
       required: ['id'],
     },
   },

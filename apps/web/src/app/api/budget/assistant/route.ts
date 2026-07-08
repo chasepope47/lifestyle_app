@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, type Content, type Part } from '@google/generative-ai'
+import { GoogleGenAI, type Content } from '@google/genai'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { READ_TOOLS, WRITE_TOOLS, WRITE_TOOL_NAMES } from './_lib/tools'
@@ -10,7 +10,7 @@ const MAX_TOOL_TURNS = 6
 function getGeminiClient() {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set')
-  return new GoogleGenerativeAI(apiKey)
+  return new GoogleGenAI({ apiKey })
 }
 
 function systemPrompt(todayISO: string) {
@@ -57,12 +57,11 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
     if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-    const genAI = getGeminiClient()
-    const model = genAI.getGenerativeModel({
-      model: MODEL,
+    const ai = getGeminiClient()
+    const config = {
       systemInstruction: systemPrompt(new Date().toISOString().slice(0, 10)),
       tools: [{ functionDeclarations: [...READ_TOOLS, ...WRITE_TOOLS] }],
-    })
+    }
 
     const contents: Content[] = messages.map(m => ({
       role: m.role === 'assistant' ? 'model' : 'user',
@@ -73,35 +72,30 @@ export async function POST(request: NextRequest) {
     let finalText = ''
 
     for (let turn = 0; turn < MAX_TOOL_TURNS; turn++) {
-      const result = await model.generateContent({ contents })
-      const parts = result.response.candidates?.[0]?.content?.parts ?? []
+      const result = await ai.models.generateContent({ model: MODEL, contents, config })
 
-      const textParts = parts.filter((p): p is { text: string } => 'text' in p && typeof p.text === 'string')
-      const text = textParts.map(p => p.text).join('').trim()
+      const text = result.text?.trim()
       if (text) finalText = text
 
-      const fnCallParts = parts.filter(
-        (p): p is { functionCall: { name: string; args: Record<string, unknown> } } =>
-          'functionCall' in p && p.functionCall != null
-      )
-
-      const writeCall = fnCallParts.find(p => WRITE_TOOL_NAMES.has(p.functionCall.name))
+      const functionCalls = result.functionCalls ?? []
+      const writeCall = functionCalls.find(fc => fc.name && WRITE_TOOL_NAMES.has(fc.name))
       if (writeCall) {
-        pendingAction = { tool: writeCall.functionCall.name, input: writeCall.functionCall.args }
+        pendingAction = { tool: writeCall.name!, input: (writeCall.args ?? {}) as Record<string, unknown> }
         break
       }
 
-      if (fnCallParts.length === 0) break
+      if (functionCalls.length === 0) break
 
-      contents.push({ role: 'model', parts })
+      const modelParts = result.candidates?.[0]?.content?.parts ?? []
+      contents.push({ role: 'model', parts: modelParts })
 
       const fnResponses = await Promise.all(
-        fnCallParts.map(async p => {
-          const res = await executeReadTool(supabase, householdId, p.functionCall.name, p.functionCall.args)
-          return { functionResponse: { name: p.functionCall.name, response: res } }
+        functionCalls.map(async fc => {
+          const res = await executeReadTool(supabase, householdId, fc.name!, (fc.args ?? {}) as Record<string, unknown>)
+          return { functionResponse: { name: fc.name!, response: res as Record<string, unknown>, id: fc.id } }
         })
       )
-      contents.push({ role: 'user', parts: fnResponses as Part[] })
+      contents.push({ role: 'user', parts: fnResponses })
     }
 
     if (!finalText) {
