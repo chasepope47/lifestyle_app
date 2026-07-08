@@ -41,6 +41,7 @@ export default function PantryPage() {
   const [activeTab, setActiveTab] = useState<'pantry' | 'shopping' | 'mealplans'>('pantry')
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
+  const [editingItem, setEditingItem] = useState<PantryItem | null>(null)
   const [form, setForm] = useState({ name: '', category: '', quantity: '1', unit: '', price: '', expiration_date: '', store: 'No store' })
   const [restocking, setRestocking] = useState<PantryItem | null>(null)
   const [restockForm, setRestockForm] = useState({ quantity: '1', expiration_date: '', price: '', store: '' })
@@ -64,14 +65,38 @@ export default function PantryPage() {
 
   useEffect(() => { load() }, [householdId])
 
-  const addItem = async (e: React.FormEvent) => {
+  const emptyItemForm = { name: '', category: '', quantity: '1', unit: '', price: '', expiration_date: '', store: 'No store' }
+
+  const openAddItem = () => {
+    setEditingItem(null)
+    setForm(emptyItemForm)
+    setShowAdd(true)
+  }
+
+  const openEditItem = (item: PantryItem) => {
+    setEditingItem(item)
+    setForm({
+      name: item.name,
+      category: item.category ?? '',
+      quantity: item.quantity != null ? String(item.quantity) : '1',
+      unit: item.unit ?? '',
+      price: item.price != null ? String(item.price) : '',
+      expiration_date: item.expiration_date ?? '',
+      store: item.store ?? 'No store',
+    })
+    setShowAdd(true)
+  }
+
+  const closeItemModal = () => {
+    setShowAdd(false)
+    setEditingItem(null)
+    setForm(emptyItemForm)
+  }
+
+  const submitItem = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!householdId || !form.name) return
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data } = await supabase.from('pantry_items').insert({
-      household_id: householdId,
-      user_id: user.id,
+    const fields = {
       name: form.name,
       category: form.category || null,
       quantity: form.quantity ? parseFloat(form.quantity) : null,
@@ -79,10 +104,20 @@ export default function PantryPage() {
       price: form.price ? parseFloat(form.price) : null,
       expiration_date: form.expiration_date || null,
       store: form.store || null,
-    }).select().single()
-    if (data) setItems(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)))
-    setShowAdd(false)
-    setForm({ name: '', category: '', quantity: '1', unit: '', price: '', expiration_date: '', store: 'No store' })
+    }
+    if (editingItem) {
+      await updateItem(editingItem.id, fields)
+    } else {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase.from('pantry_items').insert({
+        household_id: householdId,
+        user_id: user.id,
+        ...fields,
+      }).select().single()
+      if (data) setItems(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)))
+    }
+    closeItemModal()
   }
 
   const deleteItem = async (id: string) => {
@@ -224,7 +259,7 @@ export default function PantryPage() {
         overlay={true}
         action={
           <button
-            onClick={() => setShowAdd(true)}
+            onClick={openAddItem}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-stone-900 text-sm font-semibold transition-colors"
             style={{ background: '#fbbf24' }}
           >
@@ -422,6 +457,13 @@ export default function PantryPage() {
                                 </span>
                               )}
                               <button
+                                onClick={() => openEditItem(item)}
+                                title="Edit"
+                                className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
+                              >
+                                <Pencil className="w-4 h-4 text-stone-400" />
+                              </button>
+                              <button
                                 onClick={() => updateItem(item.id, { quantity: 0 })}
                                 title="Remove from pantry (moves to Shopping)"
                                 className="p-2 opacity-0 group-hover:opacity-100 hover:bg-amber-500/10 rounded transition-all"
@@ -486,6 +528,13 @@ export default function PantryPage() {
                                 <PackagePlus className="w-3.5 h-3.5" /> Restocked
                               </button>
                               <button
+                                onClick={() => openEditItem(item)}
+                                title="Edit"
+                                className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
+                              >
+                                <Pencil className="w-4 h-4 text-stone-400" />
+                              </button>
+                              <button
                                 onClick={() => deleteItem(item.id)}
                                 className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
                               >
@@ -511,22 +560,24 @@ export default function PantryPage() {
           <div className="bg-stone-900 w-full sm:max-w-md sm:rounded-2xl max-h-screen overflow-y-auto flex flex-col">
             {/* Header */}
             <div className="sticky top-0 bg-stone-900 border-b border-stone-700 px-6 py-4 flex items-center gap-3">
-              <button onClick={() => setShowAdd(false)} className="p-1 hover:bg-stone-800 rounded">
+              <button onClick={closeItemModal} className="p-1 hover:bg-stone-800 rounded">
                 <ArrowLeft className="w-5 h-5 text-stone-50" />
               </button>
-              <h1 className="text-lg font-semibold text-stone-50">Add Item</h1>
+              <h1 className="text-lg font-semibold text-stone-50">{editingItem ? 'Edit Item' : 'Add Item'}</h1>
             </div>
 
             {/* Barcode scanner */}
-            <div className="px-6 pt-4">
-              <button className="w-full py-3 rounded-lg border-2 border-dashed border-yellow-500 text-yellow-500 font-medium hover:bg-yellow-500/10 transition-colors flex items-center justify-center gap-2">
-                <Barcode className="w-5 h-5" />
-                Scan Barcode
-              </button>
-            </div>
+            {!editingItem && (
+              <div className="px-6 pt-4">
+                <button className="w-full py-3 rounded-lg border-2 border-dashed border-yellow-500 text-yellow-500 font-medium hover:bg-yellow-500/10 transition-colors flex items-center justify-center gap-2">
+                  <Barcode className="w-5 h-5" />
+                  Scan Barcode
+                </button>
+              </div>
+            )}
 
             {/* Form */}
-            <form onSubmit={addItem} className="flex-1 px-6 py-4 space-y-4">
+            <form onSubmit={submitItem} className="flex-1 px-6 py-4 space-y-4">
               {/* Product Name */}
               <div>
                 <label className="text-sm font-medium text-stone-300 mb-2 block">Product Name *</label>
@@ -627,7 +678,7 @@ export default function PantryPage() {
                   type="submit"
                   className="w-full py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors"
                 >
-                  Add to Pantry
+                  {editingItem ? 'Save Changes' : 'Add to Pantry'}
                 </button>
               </div>
             </form>
