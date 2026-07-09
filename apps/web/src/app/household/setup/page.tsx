@@ -14,17 +14,6 @@ export default function HouseholdSetupPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // TEMPORARY DEBUG — remove after diagnosing the RLS mismatch
-  const debugAuthUid = async () => {
-    setError(null)
-    setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const debug = await (supabase as any).rpc('debug_auth_uid')
-    setError(`DEBUG: ${JSON.stringify(debug.data)} | user.id=${user?.id} | rpc error=${JSON.stringify(debug.error)}`)
-    setLoading(false)
-  }
-
   const useSolo = async () => {
     setError(null)
     setLoading(true)
@@ -141,7 +130,7 @@ export default function HouseholdSetupPage() {
                 </div>
               </button>
               <button
-                onClick={debugAuthUid}
+                onClick={useSolo}
                 disabled={loading}
                 className="flex items-center justify-center gap-2 w-full rounded-xl border border-stone-200 dark:border-stone-700 p-4 text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors text-sm font-medium disabled:opacity-50"
               >
