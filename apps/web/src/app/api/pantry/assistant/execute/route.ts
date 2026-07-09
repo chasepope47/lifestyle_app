@@ -75,6 +75,26 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ result: { id: parsed.data.id, deleted: true } })
       }
 
+      case 'add_shopping_item': {
+        const parsed = writeToolSchemas.add_shopping_item.safeParse(rawInput)
+        if (!parsed.success) return NextResponse.json({ error: `Invalid input: ${parsed.error.message}` }, { status: 400 })
+        const c = parsed.data
+        const { data, error } = await supabase
+          .from('pantry_items')
+          .insert({
+            household_id: householdId,
+            user_id: user.id,
+            name: c.name,
+            category: c.category,
+            store: c.store,
+            quantity: 0,
+          })
+          .select()
+          .single()
+        if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+        return NextResponse.json({ result: data })
+      }
+
       default:
         return NextResponse.json({ error: `Unknown or non-writable tool: ${tool}` }, { status: 400 })
     }

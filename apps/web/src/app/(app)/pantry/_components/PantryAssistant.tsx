@@ -34,6 +34,8 @@ function describeAction(action: PendingAction): string {
       return `Update meal plan ${shortId(input.id)}`
     case 'delete_meal_plan':
       return `Remove meal plan ${shortId(input.id)}`
+    case 'add_shopping_item':
+      return `Add "${input.name}" to Shopping list${input.store ? ` (${input.store})` : ''}`
     default:
       return tool.replace(/_/g, ' ')
   }

@@ -85,6 +85,22 @@ export const WRITE_TOOLS: FunctionDeclaration[] = [
       required: ['id'],
     },
   },
+  {
+    name: 'add_shopping_item',
+    description:
+      "Propose adding an item to the Shopping tab (things to buy) — typically an ingredient a " +
+      "proposed meal needs that isn't currently in the pantry (per get_pantry_items status='active'). " +
+      'This does not add it to inventory yet; it shows up in Shopping until the user buys it and marks it restocked.',
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        name: { type: Type.STRING },
+        category: { type: Type.STRING, description: 'One of: Produce, Dairy, Meat & Seafood, Frozen, Pantry, Snacks, Beverages, Other' },
+        store: { type: Type.STRING, description: 'Optional preferred store to buy it from' },
+      },
+      required: ['name'],
+    },
+  },
 ]
 
 export const WRITE_TOOL_NAMES = new Set(WRITE_TOOLS.map(t => t.name))
@@ -114,6 +130,11 @@ export const writeToolSchemas = {
   }),
   delete_meal_plan: z.object({
     id: z.string().uuid(),
+  }),
+  add_shopping_item: z.object({
+    name: z.string().min(1),
+    category: z.string().optional(),
+    store: z.string().optional(),
   }),
 } as const
 
