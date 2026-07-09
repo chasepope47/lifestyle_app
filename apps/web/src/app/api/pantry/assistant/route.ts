@@ -5,7 +5,12 @@ import { READ_TOOLS, WRITE_TOOLS, WRITE_TOOL_NAMES } from './_lib/tools'
 import { executeReadTool } from './_lib/readTools'
 
 const MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite'
-const MAX_TOOL_TURNS = 6
+const MAX_TOOL_TURNS = 24
+
+// Large batch requests (e.g. two weeks of meals) take many sequential model
+// turns to fully propose; give the route room to run instead of the platform
+// default.
+export const maxDuration = 60
 
 function getGeminiClient() {
   const apiKey = process.env.GEMINI_API_KEY
@@ -33,7 +38,8 @@ Database notes:
 
 Tool use rules:
 - Read tools (get_pantry_items, get_meal_plans) are safe — call as many as you need to answer the user's question accurately, e.g. check what's on hand before suggesting a recipe.
-- Write tools (create_meal_plan, update_meal_plan, delete_meal_plan, add_shopping_items) are NEVER executed automatically. When you call one, the app shows the user a confirmation list and only writes if they approve. If the user asks for a single change, call exactly one write tool. add_shopping_items takes a list — pass every item you need to add as one entry each in a single call, no matter how many there are; never call it more than once in a turn. If they ask for multiple distinct things at once (e.g. "plan all four meals"), call one write tool per distinct thing in that same turn — each becomes its own line in the confirmation list. Briefly state in your text what you're proposing, then stop — do not call read tools after any write tool in the same turn.
+- Write tools (create_meal_plan, update_meal_plan, delete_meal_plan, add_shopping_items) are NEVER executed automatically. When you call one, it's queued as a pending action; the app shows the user the full list and only writes if they approve. If the user asks for a single change, call exactly one write tool. add_shopping_items takes a list — pass every item you need to add as one entry each in a single call, no matter how many there are; never call it more than once in a turn.
+- Large requests (e.g. "plan lunch and dinner for the next 14 days") need many create_meal_plan calls in total — for 14 days of lunch+dinner that's 28, not 2. Call it as many times as you can in one turn (several meals at once is fine), and if you still have more left, that's fine too — you'll get an acknowledgment for each and can keep calling it in the next turn. Do not stop early, don't ask permission to continue, and don't summarize partway through; keep going until EVERY meal requested has been proposed, then send one short final summary with no more tool calls.
 - Keep responses concise and conversational; this is a chat widget, not a report.`
 }
 
@@ -76,7 +82,7 @@ export async function POST(request: NextRequest) {
       parts: [{ text: m.content }],
     }))
 
-    let pendingActions: { tool: string; input: Record<string, unknown> }[] = []
+    const pendingActions: { tool: string; input: Record<string, unknown> }[] = []
     let finalText = ''
 
     for (let turn = 0; turn < MAX_TOOL_TURNS; turn++) {
@@ -86,19 +92,21 @@ export async function POST(request: NextRequest) {
       if (text) finalText = text
 
       const functionCalls = result.functionCalls ?? []
-      const writeCalls = functionCalls.filter(fc => fc.name && WRITE_TOOL_NAMES.has(fc.name))
-      if (writeCalls.length > 0) {
-        pendingActions = writeCalls.map(fc => ({ tool: fc.name!, input: (fc.args ?? {}) as Record<string, unknown> }))
-        break
-      }
-
       if (functionCalls.length === 0) break
 
       const modelParts = result.candidates?.[0]?.content?.parts ?? []
       contents.push({ role: 'model', parts: modelParts })
 
+      // Write calls are queued (never executed here) but the model still gets an
+      // acknowledgment so it can keep proposing more across subsequent turns —
+      // this is what lets a single large request (e.g. 14 days of meals) span
+      // as many turns as it needs instead of being cut off after the first one.
       const fnResponses = await Promise.all(
         functionCalls.map(async fc => {
+          if (fc.name && WRITE_TOOL_NAMES.has(fc.name)) {
+            pendingActions.push({ tool: fc.name, input: (fc.args ?? {}) as Record<string, unknown> })
+            return { functionResponse: { name: fc.name, response: { proposed: true }, id: fc.id } }
+          }
           const res = await executeReadTool(supabase, householdId, fc.name!, (fc.args ?? {}) as Record<string, unknown>)
           return { functionResponse: { name: fc.name!, response: res as Record<string, unknown>, id: fc.id } }
         })
