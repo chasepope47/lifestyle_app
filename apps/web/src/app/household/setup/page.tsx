@@ -24,25 +24,13 @@ export default function HouseholdSetupPage() {
       (user.user_metadata?.display_name as string | undefined) ??
       user.email?.split('@')[0] ??
       'My'
-    const { data: household, error: hErr } = await supabase
-      .from('households')
-      .insert({
-        name: `${displayName}'s Space`,
-        invite_code: generateInviteCode(),
-        owner_id: user.id,
-        invite_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-      })
-      .select()
-      .single()
-    if (hErr) { setError(hErr.message); setLoading(false); return }
-
-    const { error: mErr } = await supabase.from('household_members').insert({
-      household_id: household.id,
-      user_id: user.id,
-      role: 'owner',
-      display_name: user.user_metadata?.display_name ?? null,
+    const { error: hErr } = await supabase.rpc('create_household', {
+      p_name: `${displayName}'s Space`,
+      p_invite_code: generateInviteCode(),
+      p_invite_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      p_display_name: (user.user_metadata?.display_name as string | undefined) ?? null,
     })
-    if (mErr) { setError(mErr.message); setLoading(false); return }
+    if (hErr) { setError(hErr.message); setLoading(false); return }
 
     router.push('/dashboard')
   }
@@ -54,20 +42,13 @@ export default function HouseholdSetupPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const code = generateInviteCode()
-    const { data: household, error: hErr } = await supabase
-      .from('households')
-      .insert({ name: householdName, invite_code: code, owner_id: user.id, invite_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() })
-      .select()
-      .single()
-    if (hErr) { setError(hErr.message); setLoading(false); return }
-
-    await supabase.from('household_members').insert({
-      household_id: household.id,
-      user_id: user.id,
-      role: 'owner',
-      display_name: user.user_metadata?.display_name ?? null,
+    const { error: hErr } = await supabase.rpc('create_household', {
+      p_name: householdName,
+      p_invite_code: generateInviteCode(),
+      p_invite_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      p_display_name: (user.user_metadata?.display_name as string | undefined) ?? null,
     })
+    if (hErr) { setError(hErr.message); setLoading(false); return }
 
     router.push('/dashboard')
   }

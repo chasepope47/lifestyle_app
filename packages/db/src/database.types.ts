@@ -1092,6 +1092,15 @@ export interface Database {
         Args: { p_invite_code: string }
         Returns: string
       }
+      create_household: {
+        Args: {
+          p_name: string
+          p_invite_code: string
+          p_invite_expires_at: string
+          p_display_name?: string | null
+        }
+        Returns: Database['public']['Tables']['households']['Row']
+      }
     }
     Enums: Record<string, never>
   }
