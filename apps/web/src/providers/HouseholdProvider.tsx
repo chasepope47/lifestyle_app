@@ -1,7 +1,6 @@
 'use client'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { generateInviteCode } from '@lifestyle/shared'
 import type { Database } from '@lifestyle/db'
 import { useAuth } from './AuthProvider'
 
@@ -14,6 +13,7 @@ interface HouseholdContextValue {
   partner: HouseholdMember | null
   householdId: string | null
   loading: boolean
+  error: string | null
   refresh: () => Promise<void>
 }
 
@@ -23,6 +23,7 @@ const HouseholdContext = createContext<HouseholdContextValue>({
   partner: null,
   householdId: null,
   loading: true,
+  error: null,
   refresh: async () => {},
 })
 
@@ -32,9 +33,11 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   const [household, setHousehold] = useState<Household | null>(null)
   const [members, setMembers] = useState<HouseholdMember[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const load = async () => {
     try {
+      setError(null)
       if (!user) {
         setHousehold(null)
         setMembers([])
@@ -49,36 +52,10 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
         .single()
 
       if (memberError || !member) {
-        // No household yet — create a personal one so all features work immediately.
-        // User can invite a partner from settings whenever they're ready.
-        const displayName =
-          (user.user_metadata?.display_name as string | undefined) ??
-          user.email?.split('@')[0] ??
-          'My'
-        const { data: newHousehold } = await supabase
-          .from('households')
-          .insert({
-            name: `${displayName}'s Space`,
-            invite_code: generateInviteCode(),
-            owner_id: user.id,
-            invite_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-          })
-          .select()
-          .single()
-
-        if (newHousehold) {
-          await supabase.from('household_members').insert({
-            household_id: newHousehold.id,
-            user_id: user.id,
-            role: 'owner',
-            display_name: (user.user_metadata?.display_name as string | undefined) ?? null,
-          })
-          setHousehold(newHousehold)
-          setMembers([])
-        } else {
-          setHousehold(null)
-          setMembers([])
-        }
+        // No household yet. Households are only created when a user explicitly
+        // creates or joins one via /household/setup — nothing to load here.
+        setHousehold(null)
+        setMembers([])
         setLoading(false)
         return
       }
@@ -91,10 +68,11 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       setHousehold(hh ?? null)
       setMembers(mems ?? [])
       setLoading(false)
-    } catch (error) {
-      console.error('Error loading household:', error)
+    } catch (err) {
+      console.error('Error loading household:', err)
       setHousehold(null)
       setMembers([])
+      setError("We couldn't set up your household. Please try refreshing the page.")
       setLoading(false)
     }
   }
@@ -105,7 +83,15 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   const householdId = household?.id ?? null
 
   return (
-    <HouseholdContext.Provider value={{ household, members, partner, householdId, loading, refresh: load }}>
+    <HouseholdContext.Provider value={{ household, members, partner, householdId, loading, error, refresh: load }}>
+      {error && (
+        <div className="fixed top-0 inset-x-0 z-50 bg-red-600 text-white text-sm px-4 py-2 flex items-center justify-center gap-3">
+          <span>{error}</span>
+          <button onClick={load} className="underline font-medium hover:no-underline">
+            Retry
+          </button>
+        </div>
+      )}
       {children}
     </HouseholdContext.Provider>
   )

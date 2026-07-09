@@ -14,6 +14,39 @@ export default function HouseholdSetupPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
+  const useSolo = async () => {
+    setError(null)
+    setLoading(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const displayName =
+      (user.user_metadata?.display_name as string | undefined) ??
+      user.email?.split('@')[0] ??
+      'My'
+    const { data: household, error: hErr } = await supabase
+      .from('households')
+      .insert({
+        name: `${displayName}'s Space`,
+        invite_code: generateInviteCode(),
+        owner_id: user.id,
+        invite_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      })
+      .select()
+      .single()
+    if (hErr) { setError(hErr.message); setLoading(false); return }
+
+    const { error: mErr } = await supabase.from('household_members').insert({
+      household_id: household.id,
+      user_id: user.id,
+      role: 'owner',
+      display_name: user.user_metadata?.display_name ?? null,
+    })
+    if (mErr) { setError(mErr.message); setLoading(false); return }
+
+    router.push('/dashboard')
+  }
+
   const createHousehold = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -97,12 +130,14 @@ export default function HouseholdSetupPage() {
                 </div>
               </button>
               <button
-                onClick={() => router.push('/dashboard')}
-                className="flex items-center justify-center gap-2 w-full rounded-xl border border-stone-200 dark:border-stone-700 p-4 text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors text-sm font-medium"
+                onClick={useSolo}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 w-full rounded-xl border border-stone-200 dark:border-stone-700 p-4 text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors text-sm font-medium disabled:opacity-50"
               >
-                Skip for now — use solo
+                {loading ? 'Setting up…' : 'Skip for now — use solo'}
                 <ArrowRight className="w-4 h-4" />
               </button>
+              {error && <p className="text-sm text-red-600 dark:text-red-400 text-center">{error}</p>}
             </div>
           </div>
         </div>
