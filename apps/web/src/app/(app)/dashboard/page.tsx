@@ -27,7 +27,7 @@ function greeting() {
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  const { household, partner } = useHousehold()
+  const { household, partner, loading: householdLoading } = useHousehold()
   const displayName = user?.user_metadata?.display_name ?? 'there'
 
   return (
@@ -74,6 +74,34 @@ export default function DashboardPage() {
       </div>
 
       <div className="px-4 max-w-4xl mx-auto">
+        {/* No household yet CTA */}
+        {!householdLoading && !household && (
+          <div
+            className="mb-6 rounded-2xl p-4 flex items-center gap-4"
+            style={{ background: 'rgba(236,72,153,0.08)', border: '1px solid rgba(236,72,153,0.18)' }}
+          >
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.25), rgba(249,115,22,0.15))' }}
+            >
+              <Heart className="w-5 h-5 text-rose-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-rose-300 text-sm mb-0.5">Set up your household</p>
+              <p className="text-xs" style={{ color: 'rgba(236,72,153,0.55)' }}>
+                Invite your partner, join theirs, or use the app solo — your data is scoped to a household.
+              </p>
+            </div>
+            <Link
+              href="/household/settings"
+              className="flex-shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #ec4899, #f97316)' }}
+            >
+              Set up <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        )}
+
         {/* Invite partner CTA */}
         {!partner && household && (
           <div

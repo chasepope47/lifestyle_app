@@ -54,7 +54,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
 
       if (memberError || !member) {
         // No household yet. Households are only created when a user explicitly
-        // creates or joins one via /household/setup — nothing to load here.
+        // creates or joins one from /household/settings — nothing to load here.
         setHousehold(null)
         setMembers([])
         setLoading(false)
