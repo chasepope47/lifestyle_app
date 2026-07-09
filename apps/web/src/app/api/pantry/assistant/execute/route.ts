@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { PANTRY_STORES } from '@lifestyle/shared'
 import { writeToolSchemas } from '../_lib/tools'
+
+function normalizeStore(store: string | undefined): string {
+  return store && (PANTRY_STORES as readonly string[]).includes(store) ? store : 'No store'
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,22 +80,20 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ result: { id: parsed.data.id, deleted: true } })
       }
 
-      case 'add_shopping_item': {
-        const parsed = writeToolSchemas.add_shopping_item.safeParse(rawInput)
+      case 'add_shopping_items': {
+        const parsed = writeToolSchemas.add_shopping_items.safeParse(rawInput)
         if (!parsed.success) return NextResponse.json({ error: `Invalid input: ${parsed.error.message}` }, { status: 400 })
-        const c = parsed.data
         const { data, error } = await supabase
           .from('pantry_items')
-          .insert({
+          .insert(parsed.data.items.map(c => ({
             household_id: householdId,
             user_id: user.id,
             name: c.name,
             category: c.category,
-            store: c.store,
+            store: normalizeStore(c.store),
             quantity: 0,
-          })
+          })))
           .select()
-          .single()
         if (error) return NextResponse.json({ error: error.message }, { status: 400 })
         return NextResponse.json({ result: data })
       }

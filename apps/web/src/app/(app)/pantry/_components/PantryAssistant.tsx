@@ -34,8 +34,12 @@ function describeAction(action: PendingAction): string {
       return `Update meal plan ${shortId(input.id)}`
     case 'delete_meal_plan':
       return `Remove meal plan ${shortId(input.id)}`
-    case 'add_shopping_item':
-      return `Add "${input.name}" to Shopping list${input.store ? ` (${input.store})` : ''}`
+    case 'add_shopping_items': {
+      const items = Array.isArray(input.items) ? input.items as { name: string }[] : []
+      return items.length > 1
+        ? `Add ${items.length} items to Shopping list: ${items.map(i => i.name).join(', ')}`
+        : `Add "${items[0]?.name}" to Shopping list`
+    }
     default:
       return tool.replace(/_/g, ' ')
   }

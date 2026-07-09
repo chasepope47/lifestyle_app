@@ -49,6 +49,8 @@ export const EQUIPMENT_TYPES = [
 
 export const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const
 
+export const PANTRY_STORES = ['Costco', 'Walmart', 'Amazon', "Sam's Club", 'Target', 'Whole Foods', 'No store'] as const
+
 export const MOOD_OPTIONS = [
   { value: 'great', label: 'Great', emoji: '😁' },
   { value: 'good', label: 'Good', emoji: '🙂' },

@@ -86,19 +86,30 @@ export const WRITE_TOOLS: FunctionDeclaration[] = [
     },
   },
   {
-    name: 'add_shopping_item',
+    name: 'add_shopping_items',
     description:
-      "Propose adding an item to the Shopping tab (things to buy) — typically an ingredient a " +
-      "proposed meal needs that isn't currently in the pantry (per get_pantry_items status='active'). " +
-      'This does not add it to inventory yet; it shows up in Shopping until the user buys it and marks it restocked.',
+      "Propose adding one or more items to the Shopping tab (things to buy) — typically ingredients a " +
+      "proposed meal needs that aren't currently in the pantry (per get_pantry_items status='active'). " +
+      'This does not add them to inventory yet; each shows up in Shopping until the user buys it and marks it restocked. ' +
+      'Pass every missing ingredient as one entry in items — do not call this tool more than once in a turn.',
     parameters: {
       type: Type.OBJECT,
       properties: {
-        name: { type: Type.STRING },
-        category: { type: Type.STRING, description: 'One of: Produce, Dairy, Meat & Seafood, Frozen, Pantry, Snacks, Beverages, Other' },
-        store: { type: Type.STRING, description: 'Optional preferred store to buy it from' },
+        items: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              name: { type: Type.STRING },
+              category: { type: Type.STRING, description: 'One of: Produce, Dairy, Meat & Seafood, Frozen, Pantry, Snacks, Beverages, Other' },
+              store: { type: Type.STRING, description: "Optional. One of: Costco, Walmart, Amazon, Sam's Club, Target, Whole Foods, No store. Omit if unknown." },
+            },
+            required: ['name'],
+          },
+          description: 'One entry per item to add, however many are needed.',
+        },
       },
-      required: ['name'],
+      required: ['items'],
     },
   },
 ]
@@ -131,10 +142,12 @@ export const writeToolSchemas = {
   delete_meal_plan: z.object({
     id: z.string().uuid(),
   }),
-  add_shopping_item: z.object({
-    name: z.string().min(1),
-    category: z.string().optional(),
-    store: z.string().optional(),
+  add_shopping_items: z.object({
+    items: z.array(z.object({
+      name: z.string().min(1),
+      category: z.string().optional(),
+      store: z.string().optional(),
+    })).min(1),
   }),
 } as const
 

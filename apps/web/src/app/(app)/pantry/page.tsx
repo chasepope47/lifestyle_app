@@ -5,7 +5,7 @@ import { PageHero } from '@/components/layout/PageHero'
 import { ModulePage } from '@/components/layout/ModulePage'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { createClient } from '@/lib/supabase/client'
-import { getExpirationStatus, expirationBadgeClasses, formatExpirationLabel, MEAL_TYPES } from '@lifestyle/shared'
+import { getExpirationStatus, expirationBadgeClasses, formatExpirationLabel, MEAL_TYPES, PANTRY_STORES } from '@lifestyle/shared'
 import type { Database } from '@lifestyle/db'
 import { PantryAssistant } from './_components/PantryAssistant'
 
@@ -13,7 +13,7 @@ type PantryItem = Database['public']['Tables']['pantry_items']['Row']
 type MealPlan = Database['public']['Tables']['meal_plans']['Row']
 
 const CATEGORIES = ['Produce', 'Dairy', 'Meat & Seafood', 'Frozen', 'Pantry', 'Snacks', 'Beverages', 'Other']
-const STORES = ['Costco', 'Walmart', 'Amazon', "Sam's Club", 'Target', 'Whole Foods', 'No store']
+const STORES: readonly string[] = PANTRY_STORES
 const CATEGORY_ICONS: Record<string, string> = {
   'Produce': '🥬',
   'Dairy': '🥛',
@@ -241,6 +241,10 @@ export default function PantryPage() {
     }
     return acc
   }, {} as Record<string, PantryItem[]>)
+  const uncategorizedStoreItems = filtered.filter(i => !i.store || !(STORES as readonly string[]).includes(i.store))
+  if (uncategorizedStoreItems.length > 0) {
+    groupedByStore['No store'] = [...(groupedByStore['No store'] ?? []), ...uncategorizedStoreItems]
+  }
 
   const groupedMealPlans = mealPlans.reduce((acc, meal) => {
     (acc[meal.planned_date] ||= []).push(meal)
