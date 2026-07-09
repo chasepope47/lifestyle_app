@@ -13,14 +13,18 @@ type PantryItem = Database['public']['Tables']['pantry_items']['Row']
 type MealPlan = Database['public']['Tables']['meal_plans']['Row']
 type SavedRecipe = Database['public']['Tables']['saved_recipes']['Row']
 
-const CATEGORIES = ['Produce', 'Dairy', 'Meat & Seafood', 'Frozen', 'Pantry', 'Snacks', 'Beverages', 'Other']
+const CATEGORIES = ['Produce', 'Dairy', 'Meat & Seafood', 'Frozen', 'Grains', 'Pasta', 'Canned Goods', 'Condiments', 'Pantry', 'Snacks', 'Beverages', 'Other']
 const STORES: readonly string[] = PANTRY_STORES
 const CATEGORY_ICONS: Record<string, string> = {
   'Produce': '🥬',
   'Dairy': '🥛',
   'Meat & Seafood': '🥩',
   'Frozen': '❄️',
-  'Pantry': '🥫',
+  'Grains': '🌾',
+  'Pasta': '🍝',
+  'Canned Goods': '🥫',
+  'Condiments': '🧂',
+  'Pantry': '🗄️',
   'Snacks': '🍿',
   'Beverages': '🥤',
   'Other': '📦',

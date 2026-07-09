@@ -101,7 +101,7 @@ export const WRITE_TOOLS: FunctionDeclaration[] = [
             type: Type.OBJECT,
             properties: {
               name: { type: Type.STRING },
-              category: { type: Type.STRING, description: 'One of: Produce, Dairy, Meat & Seafood, Frozen, Pantry, Snacks, Beverages, Other' },
+              category: { type: Type.STRING, description: 'One of: Produce, Dairy, Meat & Seafood, Frozen, Grains, Pasta, Canned Goods, Condiments, Pantry, Snacks, Beverages, Other' },
               store: { type: Type.STRING, description: "Optional. One of: Costco, Walmart, Amazon, Sam's Club, Target, Whole Foods, No store. Omit if unknown." },
             },
             required: ['name'],
