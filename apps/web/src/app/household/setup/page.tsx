@@ -4,10 +4,12 @@ import { useRouter } from 'next/navigation'
 import { Heart, Users, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { generateInviteCode } from '@lifestyle/shared'
+import { useHousehold } from '@/providers/HouseholdProvider'
 
 export default function HouseholdSetupPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { refresh } = useHousehold()
   const [mode, setMode] = useState<'choose' | 'create' | 'join'>('choose')
   const [householdName, setHouseholdName] = useState('')
   const [inviteCode, setInviteCode] = useState('')
@@ -32,6 +34,7 @@ export default function HouseholdSetupPage() {
     })
     if (hErr) { setError(hErr.message); setLoading(false); return }
 
+    await refresh()
     router.push('/dashboard')
   }
 
@@ -50,6 +53,7 @@ export default function HouseholdSetupPage() {
     })
     if (hErr) { setError(hErr.message); setLoading(false); return }
 
+    await refresh()
     router.push('/dashboard')
   }
 
@@ -64,6 +68,7 @@ export default function HouseholdSetupPage() {
         setLoading(false)
         return
       }
+      await refresh()
       await router.push('/dashboard')
       setLoading(false)
     } catch (err) {
