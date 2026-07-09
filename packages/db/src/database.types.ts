@@ -210,6 +210,39 @@ export interface Database {
         }
         Relationships: []
       }
+      saved_recipes: {
+        Row: {
+          id: string
+          household_id: string
+          user_id: string
+          recipe_name: string
+          notes: string | null
+          ingredients: string[] | null
+          instructions: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          household_id: string
+          user_id: string
+          recipe_name: string
+          notes?: string | null
+          ingredients?: string[] | null
+          instructions?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          household_id?: string
+          user_id?: string
+          recipe_name?: string
+          notes?: string | null
+          ingredients?: string[] | null
+          instructions?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       budget_accounts: {
         Row: {
           id: string

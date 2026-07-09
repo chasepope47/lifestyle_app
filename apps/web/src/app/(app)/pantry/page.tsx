@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Plus, Search, Trash2, ArrowLeft, Barcode, ShoppingCart, PackagePlus, Pencil } from 'lucide-react'
+import { Plus, Search, Trash2, ArrowLeft, Barcode, ShoppingCart, PackagePlus, Pencil, Heart } from 'lucide-react'
 import { PageHero } from '@/components/layout/PageHero'
 import { ModulePage } from '@/components/layout/ModulePage'
 import { useHousehold } from '@/providers/HouseholdProvider'
@@ -11,6 +11,7 @@ import { PantryAssistant } from './_components/PantryAssistant'
 
 type PantryItem = Database['public']['Tables']['pantry_items']['Row']
 type MealPlan = Database['public']['Tables']['meal_plans']['Row']
+type SavedRecipe = Database['public']['Tables']['saved_recipes']['Row']
 
 const CATEGORIES = ['Produce', 'Dairy', 'Meat & Seafood', 'Frozen', 'Pantry', 'Snacks', 'Beverages', 'Other']
 const STORES: readonly string[] = PANTRY_STORES
@@ -36,6 +37,8 @@ export default function PantryPage() {
   const supabase = createClient()
   const [items, setItems] = useState<PantryItem[]>([])
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([])
+  const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([])
+  const [mealPlansView, setMealPlansView] = useState<'upcoming' | 'saved'>('upcoming')
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [activeTab, setActiveTab] = useState<'pantry' | 'shopping' | 'mealplans'>('pantry')
@@ -51,15 +54,22 @@ export default function PantryPage() {
   })
   const [viewingMeal, setViewingMeal] = useState<MealPlan | null>(null)
   const [editingMeal, setEditingMeal] = useState(false)
+  const [showAddRecipe, setShowAddRecipe] = useState(false)
+  const [recipeForm, setRecipeForm] = useState({ recipe_name: '', notes: '', ingredients: '', instructions: '' })
+  const [viewingRecipe, setViewingRecipe] = useState<SavedRecipe | null>(null)
+  const [planningRecipe, setPlanningRecipe] = useState<SavedRecipe | null>(null)
+  const [planForm, setPlanForm] = useState<{ planned_date: string; meal_type: MealPlan['meal_type'] }>({ planned_date: '', meal_type: 'dinner' })
 
   const load = async () => {
     if (!householdId) return
-    const [itemsRes, mealsRes] = await Promise.all([
+    const [itemsRes, mealsRes, recipesRes] = await Promise.all([
       supabase.from('pantry_items').select('*').eq('household_id', householdId).order('name'),
       supabase.from('meal_plans').select('*').eq('household_id', householdId).order('planned_date'),
+      supabase.from('saved_recipes').select('*').eq('household_id', householdId).order('recipe_name'),
     ])
     setItems(itemsRes.data ?? [])
     setMealPlans(mealsRes.data ?? [])
+    setSavedRecipes(recipesRes.data ?? [])
     setLoading(false)
   }
 
@@ -209,6 +219,70 @@ export default function PantryPage() {
     setMealPlans(prev => prev.filter(m => m.id !== id))
   }
 
+  const submitAddRecipe = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!householdId || !recipeForm.recipe_name) return
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const ingredients = recipeForm.ingredients.split('\n').map(s => s.trim()).filter(Boolean)
+    const { data } = await supabase.from('saved_recipes').insert({
+      household_id: householdId,
+      user_id: user.id,
+      recipe_name: recipeForm.recipe_name,
+      notes: recipeForm.notes || null,
+      ingredients: ingredients.length > 0 ? ingredients : null,
+      instructions: recipeForm.instructions || null,
+    }).select().single()
+    if (data) setSavedRecipes(prev => [...prev, data].sort((a, b) => a.recipe_name.localeCompare(b.recipe_name)))
+    setShowAddRecipe(false)
+    setRecipeForm({ recipe_name: '', notes: '', ingredients: '', instructions: '' })
+  }
+
+  const deleteRecipe = async (id: string) => {
+    await supabase.from('saved_recipes').delete().eq('id', id)
+    setSavedRecipes(prev => prev.filter(r => r.id !== id))
+    setViewingRecipe(null)
+  }
+
+  const saveMealAsRecipe = async (meal: MealPlan) => {
+    if (!householdId) return
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase.from('saved_recipes').insert({
+      household_id: householdId,
+      user_id: user.id,
+      recipe_name: meal.recipe_name,
+      notes: meal.notes,
+      ingredients: meal.ingredients,
+      instructions: meal.instructions,
+    }).select().single()
+    if (data) setSavedRecipes(prev => [...prev, data].sort((a, b) => a.recipe_name.localeCompare(b.recipe_name)))
+  }
+
+  const openPlanRecipe = (recipe: SavedRecipe) => {
+    setPlanForm({ planned_date: '', meal_type: 'dinner' })
+    setPlanningRecipe(recipe)
+  }
+
+  const submitPlanRecipe = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!householdId || !planningRecipe || !planForm.planned_date) return
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase.from('meal_plans').insert({
+      household_id: householdId,
+      user_id: user.id,
+      planned_date: planForm.planned_date,
+      meal_type: planForm.meal_type,
+      recipe_name: planningRecipe.recipe_name,
+      notes: planningRecipe.notes,
+      ingredients: planningRecipe.ingredients,
+      instructions: planningRecipe.instructions,
+    }).select().single()
+    if (data) setMealPlans(prev => [...prev, data].sort((a, b) => a.planned_date.localeCompare(b.planned_date)))
+    setPlanningRecipe(null)
+  }
+
   const filtered = items.filter(i => {
     const matchesSearch = i.name.toLowerCase().includes(search.toLowerCase())
     const matchesCategory = selectedCategory === 'All' || i.category === selectedCategory
@@ -319,58 +393,122 @@ export default function PantryPage() {
           {/* Meal Plans tab */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-stone-50">Meal Plans</h2>
-              <button
-                onClick={() => {
-                  setMealForm({ planned_date: '', meal_type: 'dinner', recipe_name: '', notes: '', ingredients: '', instructions: '' })
-                  setShowAddMeal(true)
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-900 transition-colors"
-                style={{ background: '#fbbf24' }}
-              >
-                <Plus className="w-3.5 h-3.5" /> Add Meal
-              </button>
+              <div className="flex items-center gap-1 rounded-lg bg-stone-800 p-1">
+                <button
+                  onClick={() => setMealPlansView('upcoming')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                    mealPlansView === 'upcoming' ? 'bg-yellow-500 text-stone-900' : 'text-stone-300 hover:text-stone-50'
+                  }`}
+                >
+                  Upcoming
+                </button>
+                <button
+                  onClick={() => setMealPlansView('saved')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                    mealPlansView === 'saved' ? 'bg-yellow-500 text-stone-900' : 'text-stone-300 hover:text-stone-50'
+                  }`}
+                >
+                  Saved Recipes
+                </button>
+              </div>
+              {mealPlansView === 'upcoming' ? (
+                <button
+                  onClick={() => {
+                    setMealForm({ planned_date: '', meal_type: 'dinner', recipe_name: '', notes: '', ingredients: '', instructions: '' })
+                    setShowAddMeal(true)
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-900 transition-colors"
+                  style={{ background: '#fbbf24' }}
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Meal
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setRecipeForm({ recipe_name: '', notes: '', ingredients: '', instructions: '' })
+                    setShowAddRecipe(true)
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-900 transition-colors"
+                  style={{ background: '#fbbf24' }}
+                >
+                  <Plus className="w-3.5 h-3.5" /> Save Recipe
+                </button>
+              )}
             </div>
-            {mealPlans.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-stone-700 p-8 text-center text-stone-400">
-                No meals planned yet. Add one, or ask the assistant to suggest something.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {Object.entries(groupedMealPlans).map(([date, meals]) => (
-                  <div key={date}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-semibold text-stone-300">
-                        {new Date(date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {meals.map(meal => (
-                        <div
-                          key={meal.id}
-                          onClick={() => setViewingMeal(meal)}
-                          className="flex items-center justify-between rounded-lg bg-stone-800/50 border border-stone-700 px-4 py-3 group hover:bg-stone-800 transition-colors cursor-pointer"
-                        >
-                          <div className="flex-1">
-                            <p className="font-medium text-stone-50">{MEAL_TYPE_ICONS[meal.meal_type] || '🍽️'} {meal.recipe_name}</p>
-                            <div className="flex items-center gap-2 mt-1 text-xs text-stone-400">
-                              <span className="capitalize">{meal.meal_type}</span>
-                              {meal.notes && <><span>•</span><span>{meal.notes}</span></>}
-                              {(meal.ingredients?.length || meal.instructions) && <><span>•</span><span className="text-yellow-500">Recipe available</span></>}
-                            </div>
-                          </div>
-                          <button
-                            onClick={e => { e.stopPropagation(); deleteMealPlan(meal.id) }}
-                            className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
+
+            {mealPlansView === 'upcoming' ? (
+              mealPlans.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-stone-700 p-8 text-center text-stone-400">
+                  No meals planned yet. Add one, or ask the assistant to suggest something.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {Object.entries(groupedMealPlans).map(([date, meals]) => (
+                    <div key={date}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-semibold text-stone-300">
+                          {new Date(date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {meals.map(meal => (
+                          <div
+                            key={meal.id}
+                            onClick={() => setViewingMeal(meal)}
+                            className="flex items-center justify-between rounded-lg bg-stone-800/50 border border-stone-700 px-4 py-3 group hover:bg-stone-800 transition-colors cursor-pointer"
                           >
-                            <Trash2 className="w-4 h-4 text-stone-400" />
-                          </button>
-                        </div>
-                      ))}
+                            <div className="flex-1">
+                              <p className="font-medium text-stone-50">{MEAL_TYPE_ICONS[meal.meal_type] || '🍽️'} {meal.recipe_name}</p>
+                              <div className="flex items-center gap-2 mt-1 text-xs text-stone-400">
+                                <span className="capitalize">{meal.meal_type}</span>
+                                {meal.notes && <><span>•</span><span>{meal.notes}</span></>}
+                                {(meal.ingredients?.length || meal.instructions) && <><span>•</span><span className="text-yellow-500">Recipe available</span></>}
+                              </div>
+                            </div>
+                            <button
+                              onClick={e => { e.stopPropagation(); deleteMealPlan(meal.id) }}
+                              className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
+                            >
+                              <Trash2 className="w-4 h-4 text-stone-400" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )
+            ) : (
+              savedRecipes.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-stone-700 p-8 text-center text-stone-400">
+                  No saved recipes yet. Save a meal you like to come back to it later.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {savedRecipes.map(recipe => (
+                    <div
+                      key={recipe.id}
+                      onClick={() => setViewingRecipe(recipe)}
+                      className="flex items-center justify-between rounded-lg bg-stone-800/50 border border-stone-700 px-4 py-3 group hover:bg-stone-800 transition-colors cursor-pointer"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium text-stone-50">🍽️ {recipe.recipe_name}</p>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-stone-400">
+                          {recipe.notes && <span>{recipe.notes}</span>}
+                          {(recipe.ingredients?.length || recipe.instructions) && <span className="text-yellow-500">Recipe available</span>}
+                        </div>
+                      </div>
+                      <button
+                        onClick={e => { e.stopPropagation(); openPlanRecipe(recipe) }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-900 opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ background: '#fbbf24' }}
+                      >
+                        Plan this
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )
             )}
           </div>
         </>
@@ -969,6 +1107,12 @@ export default function PantryPage() {
                   )}
                 </div>
                 <button
+                  onClick={() => saveMealAsRecipe(viewingMeal)}
+                  className="w-full py-3 rounded-lg border border-stone-700 text-yellow-500 hover:bg-stone-800 font-semibold transition-colors flex items-center justify-center gap-2"
+                >
+                  <Heart className="w-4 h-4" /> Save Recipe for Later
+                </button>
+                <button
                   onClick={() => { deleteMealPlan(viewingMeal.id); setViewingMeal(null) }}
                   className="w-full py-3 rounded-lg border border-stone-700 text-stone-400 hover:bg-stone-800 hover:text-stone-200 font-semibold transition-colors flex items-center justify-center gap-2"
                 >
@@ -976,6 +1120,169 @@ export default function PantryPage() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Add Saved Recipe Modal */}
+      {showAddRecipe && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+          <div className="bg-stone-900 w-full sm:max-w-md sm:rounded-2xl max-h-screen overflow-y-auto flex flex-col">
+            <div className="sticky top-0 bg-stone-900 border-b border-stone-700 px-6 py-4 flex items-center gap-3">
+              <button onClick={() => setShowAddRecipe(false)} className="p-1 hover:bg-stone-800 rounded">
+                <ArrowLeft className="w-5 h-5 text-stone-50" />
+              </button>
+              <h1 className="text-lg font-semibold text-stone-50">Save a Recipe</h1>
+            </div>
+            <form onSubmit={submitAddRecipe} className="flex-1 px-6 py-4 space-y-4">
+              <div>
+                <label className="text-sm font-medium text-stone-300 mb-2 block">Recipe *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Chicken Stir Fry"
+                  value={recipeForm.recipe_name}
+                  onChange={e => setRecipeForm(p => ({ ...p, recipe_name: e.target.value }))}
+                  className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-300 mb-2 block">Notes (optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Everyone loved this one"
+                  value={recipeForm.notes}
+                  onChange={e => setRecipeForm(p => ({ ...p, notes: e.target.value }))}
+                  className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-300 mb-2 block">Ingredients (optional, one per line)</label>
+                <textarea
+                  rows={4}
+                  placeholder={'2 chicken breasts\n1/4 cup teriyaki sauce\n2 cups rice'}
+                  value={recipeForm.ingredients}
+                  onChange={e => setRecipeForm(p => ({ ...p, ingredients: e.target.value }))}
+                  className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-300 mb-2 block">Instructions (optional)</label>
+                <textarea
+                  rows={4}
+                  placeholder="1. Cook rice. 2. Sear chicken. 3. Toss with sauce…"
+                  value={recipeForm.instructions}
+                  onChange={e => setRecipeForm(p => ({ ...p, instructions: e.target.value }))}
+                  className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+              </div>
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  className="w-full py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors"
+                >
+                  Save Recipe
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Saved Recipe Detail Modal */}
+      {viewingRecipe && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+          <div className="bg-stone-900 w-full sm:max-w-md sm:rounded-2xl max-h-screen overflow-y-auto flex flex-col">
+            <div className="sticky top-0 bg-stone-900 border-b border-stone-700 px-6 py-4 flex items-center gap-3">
+              <button onClick={() => setViewingRecipe(null)} className="p-1 hover:bg-stone-800 rounded">
+                <ArrowLeft className="w-5 h-5 text-stone-50" />
+              </button>
+              <h1 className="text-lg font-semibold text-stone-50 flex-1">🍽️ {viewingRecipe.recipe_name}</h1>
+            </div>
+            <div className="px-6 py-4 space-y-5">
+              {viewingRecipe.notes && <p className="text-sm text-stone-300">{viewingRecipe.notes}</p>}
+              <div>
+                <h2 className="text-sm font-semibold text-stone-50 mb-2">Ingredients</h2>
+                {viewingRecipe.ingredients && viewingRecipe.ingredients.length > 0 ? (
+                  <ul className="space-y-1.5">
+                    {viewingRecipe.ingredients.map((ing, i) => (
+                      <li key={i} className="text-sm text-stone-300 flex items-start gap-2">
+                        <span className="text-yellow-500 mt-0.5">•</span>
+                        <span>{ing}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-stone-400">No ingredient list saved.</p>
+                )}
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-stone-50 mb-2">Instructions</h2>
+                {viewingRecipe.instructions ? (
+                  <p className="text-sm text-stone-300 whitespace-pre-wrap">{viewingRecipe.instructions}</p>
+                ) : (
+                  <p className="text-sm text-stone-400">No instructions saved.</p>
+                )}
+              </div>
+              <button
+                onClick={() => { openPlanRecipe(viewingRecipe); setViewingRecipe(null) }}
+                className="w-full py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors"
+              >
+                Plan This Meal
+              </button>
+              <button
+                onClick={() => deleteRecipe(viewingRecipe.id)}
+                className="w-full py-3 rounded-lg border border-stone-700 text-stone-400 hover:bg-stone-800 hover:text-stone-200 font-semibold transition-colors flex items-center justify-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" /> Remove Saved Recipe
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Plan Recipe Modal */}
+      {planningRecipe && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+          <div className="bg-stone-900 w-full sm:max-w-md sm:rounded-2xl max-h-screen overflow-y-auto flex flex-col">
+            <div className="sticky top-0 bg-stone-900 border-b border-stone-700 px-6 py-4 flex items-center gap-3">
+              <button onClick={() => setPlanningRecipe(null)} className="p-1 hover:bg-stone-800 rounded">
+                <ArrowLeft className="w-5 h-5 text-stone-50" />
+              </button>
+              <h1 className="text-lg font-semibold text-stone-50">Plan &quot;{planningRecipe.recipe_name}&quot;</h1>
+            </div>
+            <form onSubmit={submitPlanRecipe} className="flex-1 px-6 py-4 space-y-4">
+              <div>
+                <label className="text-sm font-medium text-stone-300 mb-2 block">Date *</label>
+                <input
+                  type="date"
+                  required
+                  value={planForm.planned_date}
+                  onChange={e => setPlanForm(p => ({ ...p, planned_date: e.target.value }))}
+                  className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-300 mb-2 block">Meal</label>
+                <select
+                  value={planForm.meal_type}
+                  onChange={e => setPlanForm(p => ({ ...p, meal_type: e.target.value as MealPlan['meal_type'] }))}
+                  className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                >
+                  {MEAL_TYPES.map(t => (
+                    <option key={t} value={t}>{MEAL_TYPE_ICONS[t]} {t[0].toUpperCase() + t.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  className="w-full py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors"
+                >
+                  Add to Meal Plan
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
