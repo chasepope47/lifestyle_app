@@ -36,6 +36,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
 
   const load = async () => {
+    setLoading(true)
     try {
       setError(null)
       if (!user) {
