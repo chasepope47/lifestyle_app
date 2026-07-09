@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { verifyAuthenticationResponse } from '@simplewebauthn/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyAndExtractChallenge, CHALLENGE_COOKIE, CHALLENGE_COOKIE_OPTIONS } from '@/lib/webauthn/challenge'
+import { getRpID, getExpectedOrigin } from '@/lib/webauthn/rp'
 
 export async function POST(request: NextRequest) {
   // Retrieve and validate the challenge
@@ -26,8 +27,8 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json()
   const credentialId: string = body.id
-  const origin = new URL(request.url).origin
-  const rpID = new URL(request.url).hostname
+  const origin = getExpectedOrigin()
+  const rpID = getRpID()
 
   // Look up the stored credential by credential_id
   const { data: cred, error: credError } = await admin

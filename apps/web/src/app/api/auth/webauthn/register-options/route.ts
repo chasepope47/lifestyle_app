@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server'
 import { generateRegistrationOptions } from '@simplewebauthn/server'
 import { createClient } from '@/lib/supabase/server'
 import { signChallenge, CHALLENGE_COOKIE, CHALLENGE_COOKIE_OPTIONS } from '@/lib/webauthn/challenge'
+import { getRpID } from '@/lib/webauthn/rp'
 
-export async function POST(request: Request) {
+export async function POST() {
   const supabase = await createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
     .select('credential_id, transports')
     .eq('user_id', user.id)
 
-  const rpID = new URL(request.url).hostname
+  const rpID = getRpID()
 
   const options = await generateRegistrationOptions({
     rpName: 'Together',

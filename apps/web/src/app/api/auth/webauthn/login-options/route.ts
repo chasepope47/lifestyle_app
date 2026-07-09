@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import { generateAuthenticationOptions } from '@simplewebauthn/server'
 import { signChallenge, CHALLENGE_COOKIE, CHALLENGE_COOKIE_OPTIONS } from '@/lib/webauthn/challenge'
+import { getRpID } from '@/lib/webauthn/rp'
 
-export async function POST(request: Request) {
-  const rpID = new URL(request.url).hostname
+export async function POST() {
+  const rpID = getRpID()
 
   const options = await generateAuthenticationOptions({
     rpID,

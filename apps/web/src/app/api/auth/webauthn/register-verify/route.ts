@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { verifyRegistrationResponse } from '@simplewebauthn/server'
 import { createClient } from '@/lib/supabase/server'
 import { verifyAndExtractChallenge, CHALLENGE_COOKIE, CHALLENGE_COOKIE_OPTIONS } from '@/lib/webauthn/challenge'
+import { getRpID, getExpectedOrigin } from '@/lib/webauthn/rp'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -21,8 +22,8 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const origin = new URL(request.url).origin
-  const rpID = new URL(request.url).hostname
+  const origin = getExpectedOrigin()
+  const rpID = getRpID()
 
   let verification
   try {
