@@ -4,7 +4,15 @@ import { signChallenge, CHALLENGE_COOKIE, CHALLENGE_COOKIE_OPTIONS } from '@/lib
 import { getRpID } from '@/lib/webauthn/rp'
 
 export async function POST() {
-  const rpID = getRpID()
+  let rpID: string
+  try {
+    rpID = getRpID()
+  } catch {
+    return NextResponse.json(
+      { error: 'Server not configured for passkeys (NEXT_PUBLIC_APP_URL missing). Please contact the app owner.' },
+      { status: 500 }
+    )
+  }
 
   const options = await generateAuthenticationOptions({
     rpID,

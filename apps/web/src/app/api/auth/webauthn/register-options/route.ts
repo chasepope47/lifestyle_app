@@ -17,7 +17,15 @@ export async function POST() {
     .select('credential_id, transports')
     .eq('user_id', user.id)
 
-  const rpID = getRpID()
+  let rpID: string
+  try {
+    rpID = getRpID()
+  } catch {
+    return NextResponse.json(
+      { error: 'Server not configured for passkeys (NEXT_PUBLIC_APP_URL missing). Please contact the app owner.' },
+      { status: 500 }
+    )
+  }
 
   const options = await generateRegistrationOptions({
     rpName: 'Together',

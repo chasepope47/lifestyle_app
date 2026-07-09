@@ -27,8 +27,17 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json()
   const credentialId: string = body.id
-  const origin = getExpectedOrigin()
-  const rpID = getRpID()
+  let origin: string
+  let rpID: string
+  try {
+    origin = getExpectedOrigin()
+    rpID = getRpID()
+  } catch {
+    return NextResponse.json(
+      { error: 'Server not configured for passkeys (NEXT_PUBLIC_APP_URL missing). Please contact the app owner.' },
+      { status: 500 }
+    )
+  }
 
   // Look up the stored credential by credential_id
   const { data: cred, error: credError } = await admin
