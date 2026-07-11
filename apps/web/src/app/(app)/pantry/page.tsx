@@ -471,7 +471,7 @@ export default function PantryPage() {
                             </div>
                             <button
                               onClick={e => { e.stopPropagation(); deleteMealPlan(meal.id) }}
-                              className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
+                              className="p-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
                             >
                               <Trash2 className="w-4 h-4 text-stone-400" />
                             </button>
@@ -504,7 +504,7 @@ export default function PantryPage() {
                       </div>
                       <button
                         onClick={e => { e.stopPropagation(); openPlanRecipe(recipe) }}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-900 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-900 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                         style={{ background: '#fbbf24' }}
                       >
                         Plan this
@@ -608,14 +608,14 @@ export default function PantryPage() {
                               <button
                                 onClick={() => openEditItem(item)}
                                 title="Edit"
-                                className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
+                                className="p-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
                               >
                                 <Pencil className="w-4 h-4 text-stone-400" />
                               </button>
                               <button
                                 onClick={() => updateItem(item.id, { quantity: 0 })}
                                 title="Remove from pantry (moves to Shopping)"
-                                className="p-2 opacity-0 group-hover:opacity-100 hover:bg-amber-500/10 rounded transition-all"
+                                className="p-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-amber-500/10 rounded transition-all"
                               >
                                 <ShoppingCart className="w-4 h-4 text-amber-400" />
                               </button>
@@ -679,13 +679,13 @@ export default function PantryPage() {
                               <button
                                 onClick={() => openEditItem(item)}
                                 title="Edit"
-                                className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
+                                className="p-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
                               >
                                 <Pencil className="w-4 h-4 text-stone-400" />
                               </button>
                               <button
                                 onClick={() => deleteItem(item.id)}
-                                className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
+                                className="p-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
                               >
                                 <Trash2 className="w-4 h-4 text-stone-400" />
                               </button>
