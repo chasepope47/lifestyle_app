@@ -822,7 +822,7 @@ export default function PantryPage() {
               </div>
 
               {/* Submit button */}
-              <div className="pt-4">
+              <div className="sticky bottom-0 left-0 right-0 pt-4 bg-stone-900 border-t border-stone-700 -mx-6 px-6 pb-4">
                 <button
                   type="submit"
                   className="w-full py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors"
@@ -881,7 +881,7 @@ export default function PantryPage() {
                   onChange={e => setRestockForm(p => ({ ...p, price: e.target.value }))}
                   className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
               </div>
-              <div className="pt-2">
+              <div className="sticky bottom-0 left-0 right-0 pt-2 bg-stone-900 border-t border-stone-700 -mx-6 px-6 pb-4">
                 <button type="submit" className="w-full py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors">
                   Back to Pantry
                 </button>
@@ -965,7 +965,7 @@ export default function PantryPage() {
                   className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 />
               </div>
-              <div className="pt-4">
+              <div className="sticky bottom-0 left-0 right-0 pt-4 bg-stone-900 border-t border-stone-700 -mx-6 px-6 pb-4">
                 <button
                   type="submit"
                   className="w-full py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors"
@@ -1066,7 +1066,7 @@ export default function PantryPage() {
                     className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
                 </div>
-                <div className="pt-2 flex gap-2">
+                <div className="sticky bottom-0 left-0 right-0 pt-2 flex gap-2 bg-stone-900 border-t border-stone-700 -mx-6 px-6 pb-4">
                   <button
                     type="button"
                     onClick={() => setEditingMeal(false)}
@@ -1180,7 +1180,7 @@ export default function PantryPage() {
                   className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 />
               </div>
-              <div className="pt-4">
+              <div className="sticky bottom-0 left-0 right-0 pt-4 bg-stone-900 border-t border-stone-700 -mx-6 px-6 pb-4">
                 <button
                   type="submit"
                   className="w-full py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors"
@@ -1278,7 +1278,7 @@ export default function PantryPage() {
                   ))}
                 </select>
               </div>
-              <div className="pt-4">
+              <div className="sticky bottom-0 left-0 right-0 pt-4 bg-stone-900 border-t border-stone-700 -mx-6 px-6 pb-4">
                 <button
                   type="submit"
                   className="w-full py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors"
