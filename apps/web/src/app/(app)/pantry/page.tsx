@@ -726,7 +726,7 @@ export default function PantryPage() {
             )}
 
             {/* Form */}
-            <form onSubmit={submitItem} className="flex-1 px-6 py-4 space-y-4">
+            <form onSubmit={submitItem} className="flex-1 px-6 py-4 space-y-4 pb-20">
               {/* Product Name */}
               <div>
                 <label className="text-sm font-medium text-stone-300 mb-2 block">Product Name *</label>
@@ -848,7 +848,7 @@ export default function PantryPage() {
                 <p className="text-xs text-stone-400">Update details to return to pantry</p>
               </div>
             </div>
-            <form onSubmit={submitRestock} className="px-6 py-4 space-y-4">
+            <form onSubmit={submitRestock} className="px-6 py-4 space-y-4 pb-20">
               <div>
                 <label className="text-sm font-medium text-stone-300 mb-2 block">New Quantity *</label>
                 <div className="flex items-center gap-3">
@@ -901,7 +901,7 @@ export default function PantryPage() {
               </button>
               <h1 className="text-lg font-semibold text-stone-50">Add Meal</h1>
             </div>
-            <form onSubmit={addMealPlan} className="flex-1 px-6 py-4 space-y-4">
+            <form onSubmit={addMealPlan} className="flex-1 px-6 py-4 space-y-4 pb-20">
               <div>
                 <label className="text-sm font-medium text-stone-300 mb-2 block">Date *</label>
                 <input
@@ -1004,7 +1004,7 @@ export default function PantryPage() {
             </div>
 
             {editingMeal ? (
-              <form onSubmit={submitEditMeal} className="px-6 py-4 space-y-4">
+              <form onSubmit={submitEditMeal} className="px-6 py-4 space-y-4 pb-20">
                 <div>
                   <label className="text-sm font-medium text-stone-300 mb-2 block">Date *</label>
                   <input
@@ -1138,7 +1138,7 @@ export default function PantryPage() {
               </button>
               <h1 className="text-lg font-semibold text-stone-50">Save a Recipe</h1>
             </div>
-            <form onSubmit={submitAddRecipe} className="flex-1 px-6 py-4 space-y-4">
+            <form onSubmit={submitAddRecipe} className="flex-1 px-6 py-4 space-y-4 pb-20">
               <div>
                 <label className="text-sm font-medium text-stone-300 mb-2 block">Recipe *</label>
                 <input
@@ -1255,7 +1255,7 @@ export default function PantryPage() {
               </button>
               <h1 className="text-lg font-semibold text-stone-50">Plan &quot;{planningRecipe.recipe_name}&quot;</h1>
             </div>
-            <form onSubmit={submitPlanRecipe} className="flex-1 px-6 py-4 space-y-4">
+            <form onSubmit={submitPlanRecipe} className="flex-1 px-6 py-4 space-y-4 pb-20">
               <div>
                 <label className="text-sm font-medium text-stone-300 mb-2 block">Date *</label>
                 <input
