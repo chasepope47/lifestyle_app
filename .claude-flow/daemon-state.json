@@ -1,62 +1,62 @@
 {
   "running": true,
-  "startedAt": "2026-07-11T15:13:44.143Z",
+  "startedAt": "2026-07-12T23:15:36.477Z",
   "workers": {
     "map": {
       "runCount": 0,
       "successCount": 0,
       "failureCount": 0,
       "averageDurationMs": 0,
-      "isRunning": false,
-      "nextRun": "2026-07-11T15:13:44.143Z"
+      "nextRun": "2026-07-12T23:15:36.477Z",
+      "isRunning": false
     },
     "audit": {
       "runCount": 0,
       "successCount": 0,
       "failureCount": 0,
       "averageDurationMs": 0,
-      "isRunning": false,
-      "nextRun": "2026-07-11T15:15:44.143Z"
+      "nextRun": "2026-07-12T23:17:36.478Z",
+      "isRunning": false
     },
     "optimize": {
       "runCount": 0,
       "successCount": 0,
       "failureCount": 0,
       "averageDurationMs": 0,
-      "isRunning": false,
-      "nextRun": "2026-07-11T15:17:44.143Z"
+      "nextRun": "2026-07-12T23:19:36.478Z",
+      "isRunning": false
     },
     "consolidate": {
       "runCount": 0,
       "successCount": 0,
       "failureCount": 0,
       "averageDurationMs": 0,
-      "isRunning": false,
-      "nextRun": "2026-07-11T15:19:44.143Z"
+      "nextRun": "2026-07-12T23:21:36.478Z",
+      "isRunning": false
     },
     "testgaps": {
       "runCount": 0,
       "successCount": 0,
       "failureCount": 0,
       "averageDurationMs": 0,
-      "isRunning": false,
-      "nextRun": "2026-07-11T15:21:44.144Z"
+      "nextRun": "2026-07-12T23:23:36.478Z",
+      "isRunning": false
     },
     "backup": {
       "runCount": 0,
       "successCount": 0,
       "failureCount": 0,
       "averageDurationMs": 0,
-      "isRunning": false,
-      "nextRun": "2026-07-11T15:23:44.144Z"
+      "nextRun": "2026-07-12T23:25:36.478Z",
+      "isRunning": false
     },
     "harness": {
       "runCount": 0,
       "successCount": 0,
       "failureCount": 0,
       "averageDurationMs": 0,
-      "isRunning": false,
-      "nextRun": "2026-07-11T15:25:44.144Z"
+      "nextRun": "2026-07-12T23:27:36.478Z",
+      "isRunning": false
     },
     "predict": {
       "runCount": 0,
@@ -160,5 +160,5 @@
       }
     ]
   },
-  "savedAt": "2026-07-11T15:13:44.144Z"
+  "savedAt": "2026-07-12T23:15:36.479Z"
 }
