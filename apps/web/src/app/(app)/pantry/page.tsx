@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Plus, Search, Trash2, ArrowLeft, Barcode, ShoppingCart, PackagePlus, Pencil, Heart } from 'lucide-react'
 import { PageHero } from '@/components/layout/PageHero'
 import { ModulePage } from '@/components/layout/ModulePage'
@@ -39,13 +40,17 @@ const MEAL_TYPE_ICONS: Record<string, string> = {
 export default function PantryPage() {
   const { householdId } = useHousehold()
   const supabase = createClient()
+  const searchParams = useSearchParams()
   const [items, setItems] = useState<PantryItem[]>([])
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([])
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>([])
   const [mealPlansView, setMealPlansView] = useState<'upcoming' | 'saved'>('upcoming')
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
-  const [activeTab, setActiveTab] = useState<'pantry' | 'shopping' | 'mealplans'>('pantry')
+  const initialTab = searchParams.get('tab')
+  const [activeTab, setActiveTab] = useState<'pantry' | 'shopping' | 'mealplans'>(
+    initialTab === 'shopping' || initialTab === 'mealplans' ? initialTab : 'pantry'
+  )
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [editingItem, setEditingItem] = useState<PantryItem | null>(null)
@@ -339,7 +344,7 @@ export default function PantryPage() {
       <PageHero
         title="Pantry"
         subtitle="Kitchen inventory & shopping list"
-        gradient="linear-gradient(135deg, #1a1200 0%, #3d2800 35%, #1a1000 65%, #0d0c11 100%)"
+        gradient="linear-gradient(135deg, #1a1200 0%, #3d2800 35%, #1a1000 65%, #020617 100%)"
         accentHex="#fbbf24"
         overlay={true}
         action={

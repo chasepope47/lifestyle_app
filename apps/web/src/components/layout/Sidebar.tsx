@@ -54,8 +54,8 @@ export function Sidebar() {
 
   return (
     <aside
-      className="hidden lg:flex flex-col w-64 min-h-screen sticky top-0 h-screen overflow-hidden"
-      style={{ background: '#0d0c11', borderRight: '1px solid rgba(255,255,255,0.06)' }}
+      className="hidden lg:flex flex-col w-64 min-h-screen sticky top-0 h-screen overflow-hidden backdrop-blur-xl"
+      style={{ background: 'color-mix(in srgb, var(--surface-container-lowest) 92%, transparent)', borderRight: '1px solid var(--glass-border)' }}
     >
       {/* Left gradient accent stripe — driven by --stripe-gradient CSS var */}
       <div className="absolute left-0 top-0 bottom-0 w-px" style={{ background: 'var(--stripe-gradient)' }} />

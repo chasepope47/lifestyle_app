@@ -87,7 +87,7 @@ export default function ReligiousPage() {
       <PageHero
         title="Faith"
         subtitle="Devotionals, prayer & scripture"
-        gradient="linear-gradient(135deg, #001a1a 0%, #003d3a 35%, #001a18 65%, #0d0c11 100%)"
+        gradient="linear-gradient(135deg, #001a1a 0%, #003d3a 35%, #001a18 65%, #020617 100%)"
         accentHex="#2dd4bf"
         overlay={true}
         action={

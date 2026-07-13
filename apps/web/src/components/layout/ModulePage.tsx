@@ -18,7 +18,7 @@ const MODULES: Record<ModuleKey, { accentRgb: string; Icon: LucideIcon; bgImage:
 export function ModulePage({ module, children }: { module: ModuleKey; children: React.ReactNode }) {
   const { accentRgb, Icon, bgImage } = MODULES[module]
   return (
-    <div className="pb-20 lg:pb-10 min-h-screen relative overflow-hidden" style={{ background: '#0d0c11' }}>
+    <div className="pb-20 lg:pb-10 min-h-screen relative overflow-hidden" style={{ background: 'var(--surface-container-lowest)' }}>
       {/* Full-bleed background photo */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img

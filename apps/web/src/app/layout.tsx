@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Geist } from 'next/font/google'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/providers/AuthProvider'
 import { HouseholdProvider } from '@/providers/HouseholdProvider'
@@ -7,13 +7,14 @@ import { ModalProvider } from '@/providers/ModalProvider'
 import { ThemeProvider } from '@/providers/ThemeProvider'
 
 export const viewport: Viewport = {
-  themeColor: '#1c1917',
+  themeColor: '#020617',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
 }
 
-const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], weight: ['500', '600'], variable: '--font-jetbrains-mono' })
 
 export const metadata: Metadata = {
   title: 'Together — Your Lifestyle App',
@@ -31,8 +32,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${geist.variable} h-full`}>
-      <body className="font-sans antialiased min-h-full bg-stone-50 text-stone-900 dark:bg-[#0d0c11] dark:text-stone-50">
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable} h-full`}>
+      <body className="font-sans antialiased min-h-full bg-stone-50 text-stone-900 dark:bg-[#020617] dark:text-stone-50">
         <ThemeProvider>
           <AuthProvider>
             <HouseholdProvider>

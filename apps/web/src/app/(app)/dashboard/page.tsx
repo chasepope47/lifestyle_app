@@ -1,12 +1,19 @@
 'use client'
+import { useState } from 'react'
 import Link from 'next/link'
 import {
   Wallet, ShoppingBasket, Apple, Dumbbell,
-  BookOpen, GraduationCap, BookHeart, Heart, ArrowRight,
+  BookOpen, GraduationCap, BookHeart, Heart, ArrowRight, SlidersHorizontal,
 } from 'lucide-react'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
 import { ModulePage } from '@/components/layout/ModulePage'
+import { useDashboardData } from './_components/useDashboardData'
+import { useDashboardLayout, type WidgetId } from './_components/useDashboardLayout'
+import { CustomizeModal } from './_components/CustomizeModal'
+import {
+  SafeToSpendWidget, StepsWidget, SleepWidget, PantryLowWidget, SharedBudgetWidget,
+} from './_components/DashboardWidgets'
 
 const MODULES = [
   { href: '/budget',    icon: Wallet,        label: 'Budget',    desc: 'Track income & expenses',     hex: '#a78bfa', glow: 'rgba(167,139,250,0.15)' },
@@ -29,6 +36,34 @@ export default function DashboardPage() {
   const { user } = useAuth()
   const { household, partner, loading: householdLoading } = useHousehold()
   const displayName = user?.user_metadata?.display_name ?? 'there'
+  const data = useDashboardData()
+  const layout = useDashboardLayout()
+  const [customizeOpen, setCustomizeOpen] = useState(false)
+
+  const renderWidget = (id: WidgetId) => {
+    switch (id) {
+      case 'safeToSpend':
+        return (
+          <SafeToSpendWidget
+            key={id}
+            amount={data.safeToSpend}
+            dailySpend={data.dailySpend}
+            velocityPct={data.spendVelocityPct}
+          />
+        )
+      case 'health':
+        return (
+          <div key={id} className="col-span-2 grid grid-cols-2 gap-3">
+            <StepsWidget steps={data.steps} />
+            <SleepWidget />
+          </div>
+        )
+      case 'pantry':
+        return <PantryLowWidget key={id} items={data.pantryLowItems} />
+      case 'sharedBudget':
+        return <SharedBudgetWidget key={id} categories={data.categoryBreakdown} total={data.totalSpentThisMonth} />
+    }
+  }
 
   return (
     <ModulePage module="dashboard">
@@ -41,35 +76,45 @@ export default function DashboardPage() {
         <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full opacity-20 pointer-events-none" style={{ background: 'radial-gradient(circle, var(--accent), transparent 70%)' }} />
         <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full opacity-15 pointer-events-none" style={{ background: 'radial-gradient(circle, var(--accent2), transparent 70%)' }} />
 
-        <div className="relative">
-          <p className="text-sm font-medium mb-1" style={{ color: 'color-mix(in srgb, var(--accent) 70%, transparent)' }}>
-            {greeting()}
-          </p>
-          <h1 className="text-2xl font-bold text-white mb-3">
-            Welcome back, {displayName}
-          </h1>
+        <div className="relative flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium mb-1" style={{ color: 'color-mix(in srgb, var(--accent) 70%, transparent)' }}>
+              {greeting()}
+            </p>
+            <h1 className="text-2xl font-bold text-white mb-3">
+              Welcome back, {displayName}
+            </h1>
 
-          {partner ? (
-            <div
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
-              style={{ background: 'rgba(236,72,153,0.12)', border: '1px solid rgba(236,72,153,0.2)' }}
-            >
+            {partner ? (
               <div
-                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #ec4899, #f97316)' }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
+                style={{ background: 'rgba(236,72,153,0.12)', border: '1px solid rgba(236,72,153,0.2)' }}
               >
-                {(partner.display_name ?? '?')[0].toUpperCase()}
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #ec4899, #f97316)' }}
+                >
+                  {(partner.display_name ?? '?')[0].toUpperCase()}
+                </div>
+                <Heart className="w-3 h-3 text-rose-400" />
+                <span style={{ color: 'rgba(236,72,153,0.85)' }}>
+                  {partner.display_name ?? 'Partner'} · {household?.name}
+                </span>
               </div>
-              <Heart className="w-3 h-3 text-rose-400" />
-              <span style={{ color: 'rgba(236,72,153,0.85)' }}>
-                {partner.display_name ?? 'Partner'} · {household?.name}
-              </span>
-            </div>
-          ) : (
-            <div className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>
-              {household?.name ?? 'Your household'}
-            </div>
-          )}
+            ) : (
+              <div className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                {household?.name ?? 'Your household'}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => setCustomizeOpen(true)}
+            className="flex-shrink-0 p-2.5 rounded-full glass-card hover:border-white/20 transition-colors"
+            aria-label="Customize dashboard"
+          >
+            <SlidersHorizontal className="w-4 h-4" style={{ color: 'var(--on-surface-variant)' }} />
+          </button>
         </div>
       </div>
 
@@ -130,13 +175,20 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* At-a-glance bento grid */}
+        {household && (
+          <div className="grid grid-cols-2 gap-3 mb-8">
+            {layout.loaded && layout.visibleOrder.map(renderWidget)}
+          </div>
+        )}
+
         {/* Module grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {MODULES.map(({ href, icon: Icon, label, desc, hex, glow }) => (
             <Link
               key={href}
               href={href}
-              className="group relative rounded-2xl p-5 transition-all duration-200 overflow-hidden bg-white dark:bg-stone-900 border border-stone-100 dark:border-stone-800 hover:shadow-lg hover:-translate-y-0.5"
+              className="group relative rounded-2xl p-5 transition-all duration-200 overflow-hidden glass-card hover:-translate-y-0.5 hover:border-white/20"
             >
               {/* Top accent line */}
               <div
@@ -160,8 +212,8 @@ export default function DashboardPage() {
 
                 <div className="flex items-end justify-between">
                   <div>
-                    <h3 className="font-semibold text-stone-900 dark:text-stone-50 mb-0.5">{label}</h3>
-                    <p className="text-xs text-stone-400 dark:text-stone-500 leading-relaxed">{desc}</p>
+                    <h3 className="font-semibold mb-0.5" style={{ color: 'var(--on-surface)' }}>{label}</h3>
+                    <p className="text-xs leading-relaxed" style={{ color: 'var(--on-surface-variant)' }}>{desc}</p>
                   </div>
                   <ArrowRight
                     className="w-4 h-4 flex-shrink-0 ml-2 mb-0.5 opacity-0 group-hover:opacity-60 transition-opacity"
@@ -173,6 +225,17 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
+
+      {customizeOpen && (
+        <CustomizeModal
+          order={layout.order}
+          hidden={layout.hidden}
+          onToggle={layout.toggleWidget}
+          onReorder={layout.reorder}
+          onReset={layout.reset}
+          onClose={() => setCustomizeOpen(false)}
+        />
+      )}
     </ModulePage>
   )
 }

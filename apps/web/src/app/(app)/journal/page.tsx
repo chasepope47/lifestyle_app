@@ -51,7 +51,7 @@ export default function JournalPage() {
       <PageHero
         title="Journal"
         subtitle="Personal & shared entries"
-        gradient="linear-gradient(135deg, #1a0015 0%, #3d002e 35%, #1a0012 65%, #0d0c11 100%)"
+        gradient="linear-gradient(135deg, #1a0015 0%, #3d002e 35%, #1a0012 65%, #020617 100%)"
         accentHex="#f472b6"
         overlay={true}
         action={

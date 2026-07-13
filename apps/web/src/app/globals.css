@@ -4,25 +4,57 @@
   --background: #f8f7f5;
   --foreground: #171717;
 
-  /* Default accent theme (violet) — overwritten at runtime by ThemeProvider */
-  --accent: #7c3aed;
-  --accent2: #ec4899;
-  --brand-gradient: linear-gradient(135deg, #7c3aed, #ec4899);
-  --hero-gradient: linear-gradient(135deg, #1a0533 0%, #2e0a52 35%, #1a0a2e 65%, #0d0c11 100%);
-  --stripe-gradient: linear-gradient(to bottom, transparent, rgba(124,58,237,0.4) 30%, rgba(236,72,153,0.3) 70%, transparent);
+  /* Default accent theme (Neon Violet) — overwritten at runtime by ThemeProvider */
+  --accent: #8b5cf6;
+  --accent2: #22d3ee;
+  --brand-gradient: linear-gradient(135deg, #8b5cf6, #22d3ee);
+  --hero-gradient: linear-gradient(135deg, #1a0533 0%, #1e1b4b 35%, #0a1d2e 65%, #020617 100%);
+  --stripe-gradient: linear-gradient(to bottom, transparent, rgba(139,92,246,0.4) 30%, rgba(34,211,238,0.3) 70%, transparent);
+
+  /* Glass surface elevation scale (MD3-inspired, dark-first) */
+  --surface-container-lowest: #020617;
+  --surface-container-low: #0b1326;
+  --surface-container: #131b2e;
+  --surface-container-high: #1c2438;
+  --surface-container-highest: #2a3349;
+  --on-surface: #dae2fd;
+  --on-surface-variant: #a8adc4;
+  --outline: #5b6178;
+  --glass-bg: rgba(19, 27, 46, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.08);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+
+  --color-primary: var(--accent);
+  --color-secondary: var(--accent2);
+  --color-surface: var(--surface-container-lowest);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-outline: var(--outline);
+
+  --text-data-label: 12px;
+  --text-data-label--line-height: 16px;
+  --text-data-label--letter-spacing: 0.05em;
+  --text-data-label--font-weight: 500;
+  --text-mono-metric: 18px;
+  --text-mono-metric--line-height: 24px;
+  --text-mono-metric--letter-spacing: -0.02em;
+  --text-mono-metric--font-weight: 600;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0d0c11;
-    --foreground: #ededed;
+    --background: #020617;
+    --foreground: #dae2fd;
   }
   body {
     background-image: radial-gradient(circle, rgba(255,255,255,0.035) 1px, transparent 1px);
@@ -33,9 +65,31 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glassmorphic surface — the base building block for cards/panels across the app */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-top-color: rgba(255, 255, 255, 0.14);
+  border-left-color: rgba(255, 255, 255, 0.14);
+}
+
+.neon-glow {
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* Ambient radial mesh background used behind full-screen dark surfaces */
+.mesh-bg {
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--accent) 15%, transparent) 0%, transparent 40%),
+    radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--accent2) 15%, transparent) 0%, transparent 40%),
+    var(--surface-container-lowest);
 }
 
 /* Clean scrollbars */
@@ -47,4 +101,4 @@ body {
 
 /* Focus visible only on keyboard navigation */
 :focus { outline: none; }
-:focus-visible { outline: 2px solid #7c3aed; outline-offset: 2px; border-radius: 6px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }

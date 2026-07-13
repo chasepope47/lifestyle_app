@@ -28,7 +28,7 @@ export function MobileMoreSheet({ open, onClose }: { open: boolean; onClose: () 
       {/* Sheet */}
       <div
         className="fixed bottom-0 inset-x-0 z-50 lg:hidden rounded-t-3xl pb-safe overflow-hidden"
-        style={{ background: '#0d0c11', border: '1px solid rgba(255,255,255,0.08)', borderBottom: 'none' }}
+        style={{ background: '#020617', border: '1px solid rgba(255,255,255,0.08)', borderBottom: 'none' }}
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">

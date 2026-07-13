@@ -1,7 +1,7 @@
 'use client'
 import { useTheme, THEMES, type AccentTheme } from '@/providers/ThemeProvider'
 
-const ACCENT_ORDER: AccentTheme[] = ['violet', 'rose', 'ocean', 'emerald', 'amber']
+const ACCENT_ORDER: AccentTheme[] = ['violet', 'cyber', 'emerald', 'solar']
 
 export function ThemePicker({ compact = false }: { compact?: boolean }) {
   const { theme, setTheme } = useTheme()
@@ -21,7 +21,7 @@ export function ThemePicker({ compact = false }: { compact?: boolean }) {
               height: compact ? 16 : 20,
               background: THEMES[id].gradient,
               boxShadow: active
-                ? `0 0 0 2px #0d0c11, 0 0 0 3.5px ${THEMES[id].accent}`
+                ? `0 0 0 2px #020617, 0 0 0 3.5px ${THEMES[id].accent}`
                 : undefined,
               transform: active ? 'scale(1.15)' : undefined,
             }}

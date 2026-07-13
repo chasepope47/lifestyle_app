@@ -22,7 +22,7 @@ export function MobileTabBar() {
 
   return (
     <>
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 pb-safe bg-white/92 dark:bg-[#0d0c11]/95 backdrop-blur-xl border-t border-stone-200/70 dark:border-white/[0.06]">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 pb-safe bg-white/92 dark:bg-[#020617]/90 backdrop-blur-2xl border-t border-stone-200/70 dark:border-white/[0.08] rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.35)]">
         <div className="flex items-center justify-around h-16 px-1">
           {PRIMARY_TABS.map(({ href, icon: Icon, label, color }) => {
             const active = pathname === href || pathname.startsWith(href + '/')

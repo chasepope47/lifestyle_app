@@ -83,7 +83,7 @@ export default function SchoolPage() {
       <PageHero
         title="School"
         subtitle="Assignments, grades & deadlines"
-        gradient="linear-gradient(135deg, #1a0a00 0%, #3d1800 35%, #1a0800 65%, #0d0c11 100%)"
+        gradient="linear-gradient(135deg, #1a0a00 0%, #3d1800 35%, #1a0800 65%, #020617 100%)"
         accentHex="#fb923c"
         overlay={true}
         action={

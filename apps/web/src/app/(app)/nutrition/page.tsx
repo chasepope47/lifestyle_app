@@ -445,7 +445,7 @@ export default function NutritionPage() {
       <PageHero
         title="Nutrition"
         subtitle="Log food & track macros"
-        gradient="linear-gradient(135deg, #001a0e 0%, #023a1e 35%, #001a12 65%, #0d0c11 100%)"
+        gradient="linear-gradient(135deg, #001a0e 0%, #023a1e 35%, #001a12 65%, #020617 100%)"
         accentHex="#34d399"
         overlay={true}
       />

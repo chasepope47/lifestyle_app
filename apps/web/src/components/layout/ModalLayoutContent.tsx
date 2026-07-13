@@ -31,7 +31,7 @@ export function ModalLayoutContent({ children }: { children: React.ReactNode }) 
           style={{
             background: [
               'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)',
-              '#0d0c11',
+              '#020617',
             ].join(', '),
             backgroundSize: '32px 32px, auto',
           }}

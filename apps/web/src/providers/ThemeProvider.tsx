@@ -1,7 +1,7 @@
 'use client'
 import { createContext, useContext, useEffect, useState } from 'react'
 
-export type AccentTheme = 'violet' | 'rose' | 'ocean' | 'emerald' | 'amber'
+export type AccentTheme = 'violet' | 'cyber' | 'emerald' | 'solar'
 
 interface ThemeTokens {
   accent: string
@@ -14,44 +14,36 @@ interface ThemeTokens {
 
 export const THEMES: Record<AccentTheme, ThemeTokens> = {
   violet: {
-    accent: '#7c3aed',
-    accent2: '#ec4899',
-    gradient: 'linear-gradient(135deg, #7c3aed, #ec4899)',
-    heroGradient: 'linear-gradient(135deg, #1a0533 0%, #2e0a52 35%, #1a0a2e 65%, #0d0c11 100%)',
-    stripeGradient: 'linear-gradient(to bottom, transparent, rgba(124,58,237,0.4) 30%, rgba(236,72,153,0.3) 70%, transparent)',
-    label: 'Violet',
+    accent: '#8b5cf6',
+    accent2: '#22d3ee',
+    gradient: 'linear-gradient(135deg, #8b5cf6, #22d3ee)',
+    heroGradient: 'linear-gradient(135deg, #1a0533 0%, #1e1b4b 35%, #0a1d2e 65%, #020617 100%)',
+    stripeGradient: 'linear-gradient(to bottom, transparent, rgba(139,92,246,0.4) 30%, rgba(34,211,238,0.3) 70%, transparent)',
+    label: 'Neon Violet',
   },
-  rose: {
-    accent: '#e11d48',
-    accent2: '#f97316',
-    gradient: 'linear-gradient(135deg, #e11d48, #f97316)',
-    heroGradient: 'linear-gradient(135deg, #2d010e 0%, #4a0519 35%, #2d0a00 65%, #0d0c11 100%)',
-    stripeGradient: 'linear-gradient(to bottom, transparent, rgba(225,29,72,0.4) 30%, rgba(249,115,22,0.3) 70%, transparent)',
-    label: 'Rose',
-  },
-  ocean: {
-    accent: '#0ea5e9',
+  cyber: {
+    accent: '#4cd7f6',
     accent2: '#6366f1',
-    gradient: 'linear-gradient(135deg, #0ea5e9, #6366f1)',
-    heroGradient: 'linear-gradient(135deg, #01101d 0%, #02173a 35%, #0c0a20 65%, #0d0c11 100%)',
-    stripeGradient: 'linear-gradient(to bottom, transparent, rgba(14,165,233,0.4) 30%, rgba(99,102,241,0.3) 70%, transparent)',
-    label: 'Ocean',
+    gradient: 'linear-gradient(135deg, #4cd7f6, #6366f1)',
+    heroGradient: 'linear-gradient(135deg, #01101d 0%, #0c1a3d 35%, #150a3a 65%, #020617 100%)',
+    stripeGradient: 'linear-gradient(to bottom, transparent, rgba(76,215,246,0.4) 30%, rgba(99,102,241,0.3) 70%, transparent)',
+    label: 'Cyber Blue',
   },
   emerald: {
-    accent: '#10b981',
-    accent2: '#2dd4bf',
-    gradient: 'linear-gradient(135deg, #10b981, #2dd4bf)',
-    heroGradient: 'linear-gradient(135deg, #021a10 0%, #053a22 35%, #021a16 65%, #0d0c11 100%)',
-    stripeGradient: 'linear-gradient(to bottom, transparent, rgba(16,185,129,0.4) 30%, rgba(45,212,191,0.3) 70%, transparent)',
-    label: 'Emerald',
+    accent: '#34d399',
+    accent2: '#0ea5e9',
+    gradient: 'linear-gradient(135deg, #34d399, #0ea5e9)',
+    heroGradient: 'linear-gradient(135deg, #021a10 0%, #053a22 35%, #021a2e 65%, #020617 100%)',
+    stripeGradient: 'linear-gradient(to bottom, transparent, rgba(52,211,153,0.4) 30%, rgba(14,165,233,0.3) 70%, transparent)',
+    label: 'Emerald Tech',
   },
-  amber: {
-    accent: '#f59e0b',
+  solar: {
+    accent: '#fb923c',
     accent2: '#ef4444',
-    gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-    heroGradient: 'linear-gradient(135deg, #1f1000 0%, #3d1f00 35%, #2d0a00 65%, #0d0c11 100%)',
-    stripeGradient: 'linear-gradient(to bottom, transparent, rgba(245,158,11,0.4) 30%, rgba(239,68,68,0.3) 70%, transparent)',
-    label: 'Amber',
+    gradient: 'linear-gradient(135deg, #fb923c, #ef4444)',
+    heroGradient: 'linear-gradient(135deg, #1f1000 0%, #3d1f00 35%, #2d0a00 65%, #020617 100%)',
+    stripeGradient: 'linear-gradient(to bottom, transparent, rgba(251,146,60,0.4) 30%, rgba(239,68,68,0.3) 70%, transparent)',
+    label: 'Solar Orange',
   },
 }
 
