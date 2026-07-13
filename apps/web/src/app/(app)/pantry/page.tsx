@@ -476,7 +476,7 @@ export default function PantryPage() {
                             </div>
                             <button
                               onClick={e => { e.stopPropagation(); deleteMealPlan(meal.id) }}
-                              className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
+                              className="p-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
                             >
                               <Trash2 className="w-4 h-4 text-stone-400" />
                             </button>
@@ -509,7 +509,7 @@ export default function PantryPage() {
                       </div>
                       <button
                         onClick={e => { e.stopPropagation(); openPlanRecipe(recipe) }}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-900 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-900 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                         style={{ background: '#fbbf24' }}
                       >
                         Plan this
@@ -613,14 +613,14 @@ export default function PantryPage() {
                               <button
                                 onClick={() => openEditItem(item)}
                                 title="Edit"
-                                className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
+                                className="p-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
                               >
                                 <Pencil className="w-4 h-4 text-stone-400" />
                               </button>
                               <button
                                 onClick={() => updateItem(item.id, { quantity: 0 })}
                                 title="Remove from pantry (moves to Shopping)"
-                                className="p-2 opacity-0 group-hover:opacity-100 hover:bg-amber-500/10 rounded transition-all"
+                                className="p-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-amber-500/10 rounded transition-all"
                               >
                                 <ShoppingCart className="w-4 h-4 text-amber-400" />
                               </button>
@@ -684,13 +684,13 @@ export default function PantryPage() {
                               <button
                                 onClick={() => openEditItem(item)}
                                 title="Edit"
-                                className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
+                                className="p-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
                               >
                                 <Pencil className="w-4 h-4 text-stone-400" />
                               </button>
                               <button
                                 onClick={() => deleteItem(item.id)}
-                                className="p-2 opacity-0 group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
+                                className="p-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-stone-700 rounded transition-all"
                               >
                                 <Trash2 className="w-4 h-4 text-stone-400" />
                               </button>
@@ -731,7 +731,7 @@ export default function PantryPage() {
             )}
 
             {/* Form */}
-            <form onSubmit={submitItem} className="flex-1 px-6 py-4 space-y-4">
+            <form onSubmit={submitItem} className="flex-1 px-6 py-4 space-y-4 pb-20">
               {/* Product Name */}
               <div>
                 <label className="text-sm font-medium text-stone-300 mb-2 block">Product Name *</label>
@@ -827,7 +827,7 @@ export default function PantryPage() {
               </div>
 
               {/* Submit button */}
-              <div className="pt-4">
+              <div className="sticky bottom-0 left-0 right-0 pt-4 bg-stone-900 border-t border-stone-700 -mx-6 px-6 pb-4">
                 <button
                   type="submit"
                   className="w-full py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors"
@@ -853,7 +853,7 @@ export default function PantryPage() {
                 <p className="text-xs text-stone-400">Update details to return to pantry</p>
               </div>
             </div>
-            <form onSubmit={submitRestock} className="px-6 py-4 space-y-4">
+            <form onSubmit={submitRestock} className="px-6 py-4 space-y-4 pb-20">
               <div>
                 <label className="text-sm font-medium text-stone-300 mb-2 block">New Quantity *</label>
                 <div className="flex items-center gap-3">
@@ -886,7 +886,7 @@ export default function PantryPage() {
                   onChange={e => setRestockForm(p => ({ ...p, price: e.target.value }))}
                   className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
               </div>
-              <div className="pt-2">
+              <div className="sticky bottom-0 left-0 right-0 pt-2 bg-stone-900 border-t border-stone-700 -mx-6 px-6 pb-4">
                 <button type="submit" className="w-full py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors">
                   Back to Pantry
                 </button>
@@ -906,7 +906,7 @@ export default function PantryPage() {
               </button>
               <h1 className="text-lg font-semibold text-stone-50">Add Meal</h1>
             </div>
-            <form onSubmit={addMealPlan} className="flex-1 px-6 py-4 space-y-4">
+            <form onSubmit={addMealPlan} className="flex-1 px-6 py-4 space-y-4 pb-20">
               <div>
                 <label className="text-sm font-medium text-stone-300 mb-2 block">Date *</label>
                 <input
@@ -970,7 +970,7 @@ export default function PantryPage() {
                   className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 />
               </div>
-              <div className="pt-4">
+              <div className="sticky bottom-0 left-0 right-0 pt-4 bg-stone-900 border-t border-stone-700 -mx-6 px-6 pb-4">
                 <button
                   type="submit"
                   className="w-full py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors"
@@ -1009,7 +1009,7 @@ export default function PantryPage() {
             </div>
 
             {editingMeal ? (
-              <form onSubmit={submitEditMeal} className="px-6 py-4 space-y-4">
+              <form onSubmit={submitEditMeal} className="px-6 py-4 space-y-4 pb-20">
                 <div>
                   <label className="text-sm font-medium text-stone-300 mb-2 block">Date *</label>
                   <input
@@ -1071,7 +1071,7 @@ export default function PantryPage() {
                     className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
                 </div>
-                <div className="pt-2 flex gap-2">
+                <div className="sticky bottom-0 left-0 right-0 pt-2 flex gap-2 bg-stone-900 border-t border-stone-700 -mx-6 px-6 pb-4">
                   <button
                     type="button"
                     onClick={() => setEditingMeal(false)}
@@ -1143,7 +1143,7 @@ export default function PantryPage() {
               </button>
               <h1 className="text-lg font-semibold text-stone-50">Save a Recipe</h1>
             </div>
-            <form onSubmit={submitAddRecipe} className="flex-1 px-6 py-4 space-y-4">
+            <form onSubmit={submitAddRecipe} className="flex-1 px-6 py-4 space-y-4 pb-20">
               <div>
                 <label className="text-sm font-medium text-stone-300 mb-2 block">Recipe *</label>
                 <input
@@ -1185,7 +1185,7 @@ export default function PantryPage() {
                   className="w-full rounded-lg border border-stone-600 bg-stone-800 px-4 py-3 text-stone-50 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 />
               </div>
-              <div className="pt-4">
+              <div className="sticky bottom-0 left-0 right-0 pt-4 bg-stone-900 border-t border-stone-700 -mx-6 px-6 pb-4">
                 <button
                   type="submit"
                   className="w-full py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors"
@@ -1260,7 +1260,7 @@ export default function PantryPage() {
               </button>
               <h1 className="text-lg font-semibold text-stone-50">Plan &quot;{planningRecipe.recipe_name}&quot;</h1>
             </div>
-            <form onSubmit={submitPlanRecipe} className="flex-1 px-6 py-4 space-y-4">
+            <form onSubmit={submitPlanRecipe} className="flex-1 px-6 py-4 space-y-4 pb-20">
               <div>
                 <label className="text-sm font-medium text-stone-300 mb-2 block">Date *</label>
                 <input
@@ -1283,7 +1283,7 @@ export default function PantryPage() {
                   ))}
                 </select>
               </div>
-              <div className="pt-4">
+              <div className="sticky bottom-0 left-0 right-0 pt-4 bg-stone-900 border-t border-stone-700 -mx-6 px-6 pb-4">
                 <button
                   type="submit"
                   className="w-full py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-stone-900 font-semibold transition-colors"
