@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Plus, Search, Trash2, ArrowLeft, Barcode, ShoppingCart, PackagePlus, Pencil, Heart } from 'lucide-react'
 import { PageHero } from '@/components/layout/PageHero'
@@ -38,6 +38,14 @@ const MEAL_TYPE_ICONS: Record<string, string> = {
 }
 
 export default function PantryPage() {
+  return (
+    <Suspense fallback={null}>
+      <PantryPageContent />
+    </Suspense>
+  )
+}
+
+function PantryPageContent() {
   const { householdId } = useHousehold()
   const supabase = createClient()
   const searchParams = useSearchParams()
