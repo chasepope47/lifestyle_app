@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Wallet, ShoppingBasket, Apple, Dumbbell,
-  BookOpen, GraduationCap, BookHeart, Heart, LogOut, Settings,
+  BookOpen, GraduationCap, BookHeart, Heart, LogOut, Settings, ShieldCheck,
 } from 'lucide-react'
 import { useAuth } from '@/providers/AuthProvider'
 import { useHousehold } from '@/providers/HouseholdProvider'
@@ -17,6 +17,7 @@ const NAV = [
   { href: '/workouts',  icon: Dumbbell,        label: 'Workouts',  color: '#60a5fa' },
   { href: '/journal',   icon: BookOpen,        label: 'Journal',   color: '#f472b6' },
   { href: '/school',    icon: GraduationCap,   label: 'School',    color: '#fb923c' },
+  { href: '/learning',  icon: ShieldCheck,     label: 'Learning',  color: '#4ade80' },
   { href: '/religious', icon: BookHeart,       label: 'Faith',     color: '#2dd4bf' },
 ]
 

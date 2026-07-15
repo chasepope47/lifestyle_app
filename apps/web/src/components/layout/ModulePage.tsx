@@ -1,8 +1,8 @@
 'use client'
-import { Landmark, ShoppingBasket, Leaf, Mountain, BookOpen, GraduationCap, Sun, LayoutDashboard } from 'lucide-react'
+import { Landmark, ShoppingBasket, Leaf, Mountain, BookOpen, GraduationCap, Sun, LayoutDashboard, ShieldCheck } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-export type ModuleKey = 'dashboard' | 'budget' | 'pantry' | 'nutrition' | 'workouts' | 'journal' | 'school' | 'religious'
+export type ModuleKey = 'dashboard' | 'budget' | 'pantry' | 'nutrition' | 'workouts' | 'journal' | 'school' | 'religious' | 'learning'
 
 const MODULES: Record<ModuleKey, { accentRgb: string; Icon: LucideIcon; bgImage: string }> = {
   dashboard: { accentRgb: '139,92,246',  Icon: LayoutDashboard, bgImage: '/images/modules/dashboard.jpg' },
@@ -13,6 +13,7 @@ const MODULES: Record<ModuleKey, { accentRgb: string; Icon: LucideIcon; bgImage:
   journal:   { accentRgb: '244,114,182', Icon: BookOpen,        bgImage: '/images/modules/journal.jpg'   },
   school:    { accentRgb: '251,146,60',  Icon: GraduationCap,   bgImage: '/images/modules/school.jpg'    },
   religious: { accentRgb: '45,212,191',  Icon: Sun,             bgImage: '/images/modules/religious.jpg' },
+  learning:  { accentRgb: '74,222,128',  Icon: ShieldCheck,     bgImage: '/images/modules/school.jpg'    },
 }
 
 export function ModulePage({ module, children }: { module: ModuleKey; children: React.ReactNode }) {
