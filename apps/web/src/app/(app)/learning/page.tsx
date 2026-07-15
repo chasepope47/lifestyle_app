@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Plus, Flame, ShieldCheck, Briefcase } from 'lucide-react'
+import { Plus, Flame, ShieldCheck, Briefcase, ExternalLink, Check } from 'lucide-react'
 import { PageHero } from '@/components/layout/PageHero'
 import { ModulePage } from '@/components/layout/ModulePage'
 import { useHousehold } from '@/providers/HouseholdProvider'
@@ -13,6 +13,7 @@ type StudySession = Database['public']['Tables']['study_sessions']['Row']
 type CertGoal = Database['public']['Tables']['certs_goals']['Row']
 type CtfEntry = Database['public']['Tables']['ctf_progress']['Row']
 type JobApplication = Database['public']['Tables']['job_applications']['Row']
+type JobLead = Database['public']['Tables']['job_leads']['Row']
 
 const JOB_STATUS_COLUMNS: JobApplication['status'][] = [
   'saved', 'applied', 'phone_screen', 'interviewing', 'offer', 'rejected',
@@ -38,6 +39,7 @@ export default function LearningPage() {
   const [certs, setCerts] = useState<CertGoal[]>([])
   const [ctfs, setCtfs] = useState<CtfEntry[]>([])
   const [jobs, setJobs] = useState<JobApplication[]>([])
+  const [leads, setLeads] = useState<JobLead[]>([])
   const [loading, setLoading] = useState(true)
 
   const [showAddSession, setShowAddSession] = useState(false)
@@ -50,16 +52,18 @@ export default function LearningPage() {
 
   const load = async () => {
     if (!householdId || !user) return
-    const [{ data: s }, { data: c }, { data: ctf }, { data: j }] = await Promise.all([
+    const [{ data: s }, { data: c }, { data: ctf }, { data: j }, { data: l }] = await Promise.all([
       supabase.from('study_sessions').select('*').eq('user_id', user.id).order('started_at', { ascending: false }).limit(20),
       supabase.from('certs_goals').select('*').eq('user_id', user.id).order('target_date', { ascending: true, nullsFirst: false }),
       supabase.from('ctf_progress').select('*').eq('user_id', user.id).order('attempted_at', { ascending: false }).limit(20),
       supabase.from('job_applications').select('*').eq('household_id', householdId).order('updated_at', { ascending: false }),
+      supabase.from('job_leads').select('*').eq('household_id', householdId).order('created_at', { ascending: false }).limit(30),
     ])
     setSessions(s ?? [])
     setCerts(c ?? [])
     setCtfs(ctf ?? [])
     setJobs(j ?? [])
+    setLeads(l ?? [])
     setLoading(false)
   }
 
@@ -128,6 +132,27 @@ export default function LearningPage() {
     if (status === 'applied') patch.applied_at = new Date().toISOString().slice(0, 10)
     await supabase.from('job_applications').update(patch).eq('id', id)
     setJobs(prev => prev.map(j => j.id === id ? { ...j, ...patch } : j))
+  }
+
+  const applyToLead = async (lead: JobLead) => {
+    if (!user || !householdId) return
+    const { data } = await supabase.from('job_applications').insert({
+      user_id: user.id,
+      household_id: householdId,
+      lead_id: lead.id,
+      company: lead.company,
+      role_title: lead.role_title,
+      url: lead.url,
+      status: 'saved',
+    }).select().single()
+    if (data) setJobs(prev => [data, ...prev])
+    await supabase.from('job_leads').delete().eq('id', lead.id)
+    setLeads(prev => prev.filter(l => l.id !== lead.id))
+  }
+
+  const dismissLead = async (id: string) => {
+    await supabase.from('job_leads').delete().eq('id', id)
+    setLeads(prev => prev.filter(l => l.id !== id))
   }
 
   if (loading) return <div className="p-8 text-stone-400">Loading…</div>
@@ -226,6 +251,47 @@ export default function LearningPage() {
             ))}
           </div>
         </div>
+
+        {/* Recommended leads (from Odysseus's daily search or manually sourced) */}
+        {leads.length > 0 && (
+          <div>
+            <h2 className="text-sm font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-3">
+              Recommended Leads ({leads.length})
+            </h2>
+            <div className="space-y-2">
+              {leads.map(l => (
+                <div key={l.id} className="rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-stone-900 dark:text-stone-50 truncate">{l.role_title}</p>
+                      {l.match_score != null && (
+                        <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 flex-shrink-0">
+                          {l.match_score}% match
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-stone-400 truncate">
+                      {l.company}{l.source ? ` · via ${l.source}` : ''}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {l.url && (
+                      <a href={l.url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 dark:hover:text-stone-200">
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                    <button onClick={() => applyToLead(l)} className="p-1.5 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300" title="Move to applications">
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => dismissLead(l.id)} className="p-1.5 rounded-lg text-stone-400 hover:text-red-500" title="Dismiss">
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Job pipeline */}
         <div>
