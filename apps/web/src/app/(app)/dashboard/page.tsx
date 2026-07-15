@@ -3,7 +3,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import {
   Wallet, ShoppingBasket, Apple, Dumbbell,
-  BookOpen, GraduationCap, BookHeart, Heart, ArrowRight, SlidersHorizontal,
+  BookOpen, GraduationCap, BookHeart, Heart, ArrowRight, SlidersHorizontal, ShieldCheck,
 } from 'lucide-react'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
@@ -12,7 +12,7 @@ import { useDashboardData } from './_components/useDashboardData'
 import { useDashboardLayout, type WidgetId } from './_components/useDashboardLayout'
 import { CustomizeModal } from './_components/CustomizeModal'
 import {
-  SafeToSpendWidget, StepsWidget, SleepWidget, PantryLowWidget, SharedBudgetWidget,
+  SafeToSpendWidget, StepsWidget, SleepWidget, PantryLowWidget, SharedBudgetWidget, LearningWidget,
 } from './_components/DashboardWidgets'
 
 const MODULES = [
@@ -22,6 +22,7 @@ const MODULES = [
   { href: '/workouts',  icon: Dumbbell,      label: 'Workouts',  desc: 'Sessions & wearables',        hex: '#60a5fa', glow: 'rgba(96,165,250,0.15)'  },
   { href: '/journal',   icon: BookOpen,      label: 'Journal',   desc: 'Personal & shared entries',   hex: '#f472b6', glow: 'rgba(244,114,182,0.15)' },
   { href: '/school',    icon: GraduationCap, label: 'School',    desc: 'Assignments & grades',        hex: '#fb923c', glow: 'rgba(251,146,60,0.15)'  },
+  { href: '/learning',  icon: ShieldCheck,   label: 'Learning',  desc: 'Study, certs & job search',   hex: '#4ade80', glow: 'rgba(74,222,128,0.15)'  },
   { href: '/religious', icon: BookHeart,     label: 'Faith',     desc: 'Devotionals, prayer & more',  hex: '#2dd4bf', glow: 'rgba(45,212,191,0.15)'  },
 ]
 
@@ -62,6 +63,15 @@ export default function DashboardPage() {
         return <PantryLowWidget key={id} items={data.pantryLowItems} />
       case 'sharedBudget':
         return <SharedBudgetWidget key={id} categories={data.categoryBreakdown} total={data.totalSpentThisMonth} />
+      case 'learning':
+        return (
+          <LearningWidget
+            key={id}
+            studyStreak={data.studyStreak}
+            activeApplications={data.activeApplications}
+            newLeads={data.newLeads}
+          />
+        )
     }
   }
 

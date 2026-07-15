@@ -1,16 +1,17 @@
 'use client'
 import { useEffect, useState } from 'react'
 
-export type WidgetId = 'safeToSpend' | 'health' | 'pantry' | 'sharedBudget'
+export type WidgetId = 'safeToSpend' | 'health' | 'pantry' | 'sharedBudget' | 'learning'
 
 export const WIDGET_META: Record<WidgetId, { title: string; description: string; icon: string }> = {
   safeToSpend: { title: 'Safe to Spend', description: 'Real-time monthly budget tracker', icon: 'wallet' },
   health: { title: 'Health Hub', description: 'Steps and sleep at a glance', icon: 'health' },
   pantry: { title: 'Pantry Tracker', description: 'Low-stock and expiring items', icon: 'pantry' },
   sharedBudget: { title: 'Shared Budget', description: 'Category spending breakdown', icon: 'budget' },
+  learning: { title: 'Learning', description: 'Study streak, certs, and job search', icon: 'learning' },
 }
 
-const DEFAULT_ORDER: WidgetId[] = ['safeToSpend', 'health', 'pantry', 'sharedBudget']
+const DEFAULT_ORDER: WidgetId[] = ['safeToSpend', 'health', 'pantry', 'sharedBudget', 'learning']
 const STORAGE_KEY = 'lifestyle-dashboard-layout'
 
 interface StoredLayout {

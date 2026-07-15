@@ -31,6 +31,9 @@ export interface DashboardData {
   pantryLowItems: PantryLowItem[]
   steps: number | null
   stepsDate: string | null
+  studyStreak: number
+  activeApplications: number
+  newLeads: number
 }
 
 function monthBounds(date: Date) {
@@ -54,6 +57,9 @@ export function useDashboardData(): DashboardData {
     pantryLowItems: [],
     steps: null,
     stepsDate: null,
+    studyStreak: 0,
+    activeApplications: 0,
+    newLeads: 0,
   })
 
   useEffect(() => {
@@ -68,7 +74,7 @@ export function useDashboardData(): DashboardData {
       const twelveDaysAgo = new Date(now)
       twelveDaysAgo.setDate(twelveDaysAgo.getDate() - 11)
 
-      const [monthTxRes, velocityTxRes, catRes, pantryRes, healthRes] = await Promise.all([
+      const [monthTxRes, velocityTxRes, catRes, pantryRes, healthRes, studyRes, applicationsRes, leadsRes] = await Promise.all([
         supabase
           .from('transactions')
           .select('amount, category_id')
@@ -99,6 +105,11 @@ export function useDashboardData(): DashboardData {
               .limit(1)
               .maybeSingle()
           : Promise.resolve({ data: null }),
+        user
+          ? supabase.from('study_sessions').select('started_at').eq('user_id', user.id).order('started_at', { ascending: false }).limit(60)
+          : Promise.resolve({ data: [] }),
+        supabase.from('job_applications').select('id, status').eq('household_id', hid).not('status', 'in', '(rejected,withdrawn)'),
+        supabase.from('job_leads').select('id', { count: 'exact', head: true }).eq('household_id', hid),
       ])
 
       if (cancelled) return
@@ -153,6 +164,17 @@ export function useDashboardData(): DashboardData {
 
       const health = healthRes.data as { steps: number | null; metric_date: string } | null
 
+      // Study streak: consecutive days (including today) with a logged session
+      const studyDays = new Set((studyRes.data ?? []).map((s: { started_at: string }) => s.started_at.slice(0, 10)))
+      let studyStreak = 0
+      const cursor = new Date(now)
+      for (;;) {
+        const key = cursor.toISOString().slice(0, 10)
+        if (!studyDays.has(key)) break
+        studyStreak++
+        cursor.setDate(cursor.getDate() - 1)
+      }
+
       setData({
         loading: false,
         safeToSpend: income - expenses,
@@ -163,6 +185,9 @@ export function useDashboardData(): DashboardData {
         pantryLowItems,
         steps: health?.steps ?? null,
         stepsDate: health?.metric_date ?? null,
+        studyStreak,
+        activeApplications: (applicationsRes.data ?? []).length,
+        newLeads: (leadsRes as { count: number | null }).count ?? 0,
       })
     }
 

@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { X, Palette, LayoutGrid, GripVertical, Wallet, HeartPulse, ShoppingBasket, PieChart } from 'lucide-react'
+import { X, Palette, LayoutGrid, GripVertical, Wallet, HeartPulse, ShoppingBasket, PieChart, ShieldCheck } from 'lucide-react'
 import { useTheme, THEMES, type AccentTheme } from '@/providers/ThemeProvider'
 import { Toggle } from '@/components/ui/Toggle'
 import { WIDGET_META, type WidgetId } from './useDashboardLayout'
@@ -12,6 +12,7 @@ const WIDGET_ICONS: Record<WidgetId, typeof Wallet> = {
   health: HeartPulse,
   pantry: ShoppingBasket,
   sharedBudget: PieChart,
+  learning: ShieldCheck,
 }
 
 export function CustomizeModal({

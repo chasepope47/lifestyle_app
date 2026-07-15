@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { ShoppingCart, Footprints, Moon, ArrowUpRight } from 'lucide-react'
+import { ShoppingCart, Footprints, Moon, ArrowUpRight, Flame, Briefcase } from 'lucide-react'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { Badge } from '@/components/ui/Badge'
 import { ProgressRing } from '@/components/ui/ProgressRing'
@@ -139,6 +139,46 @@ export function PantryLowWidget({ items }: { items: PantryLowItem[] }) {
         style={{ backgroundColor: 'var(--surface-container-high)', borderColor: 'var(--glass-border)', color: 'var(--on-surface)' }}
       >
         {items.length ? 'Review' : 'View Pantry'}
+      </Link>
+    </GlassCard>
+  )
+}
+
+export function LearningWidget({
+  studyStreak,
+  activeApplications,
+  newLeads,
+}: {
+  studyStreak: number
+  activeApplications: number
+  newLeads: number
+}) {
+  return (
+    <GlassCard className="p-4 flex items-center justify-between gap-4 col-span-2">
+      <div className="flex items-center gap-4 min-w-0">
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ backgroundColor: 'color-mix(in srgb, #4ade80 12%, transparent)', border: '1px solid color-mix(in srgb, #4ade80 25%, transparent)' }}
+        >
+          <Flame className="w-5 h-5" style={{ color: '#4ade80' }} />
+        </div>
+        <div className="min-w-0">
+          <h3 className="font-semibold" style={{ color: 'var(--on-surface)' }}>
+            {studyStreak > 0 ? `${studyStreak} day streak` : 'Learning'}
+          </h3>
+          <p className="text-data-label truncate flex items-center gap-1.5" style={{ color: 'var(--on-surface-variant)' }}>
+            <Briefcase className="w-3 h-3" />
+            {activeApplications} active application{activeApplications === 1 ? '' : 's'}
+            {newLeads > 0 ? ` · ${newLeads} new lead${newLeads === 1 ? '' : 's'}` : ''}
+          </p>
+        </div>
+      </div>
+      <Link
+        href="/learning"
+        className="flex-shrink-0 px-4 py-2 rounded-xl text-data-label font-mono border transition-colors hover:bg-white/10"
+        style={{ backgroundColor: 'var(--surface-container-high)', borderColor: 'var(--glass-border)', color: 'var(--on-surface)' }}
+      >
+        View
       </Link>
     </GlassCard>
   )
