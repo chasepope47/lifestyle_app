@@ -297,6 +297,66 @@ export type Database = {
           },
         ]
       }
+      budget_goals: {
+        Row: {
+          achieved_at: string | null
+          category_id: string | null
+          created_at: string
+          created_by: string
+          current_amount: number
+          goal_type: string
+          household_id: string
+          id: string
+          name: string
+          notes: string | null
+          target_amount: number
+          target_date: string | null
+        }
+        Insert: {
+          achieved_at?: string | null
+          category_id?: string | null
+          created_at?: string
+          created_by: string
+          current_amount?: number
+          goal_type: string
+          household_id: string
+          id?: string
+          name: string
+          notes?: string | null
+          target_amount: number
+          target_date?: string | null
+        }
+        Update: {
+          achieved_at?: string | null
+          category_id?: string | null
+          created_at?: string
+          created_by?: string
+          current_amount?: number
+          goal_type?: string
+          household_id?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          target_amount?: number
+          target_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_goals_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "budget_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budget_goals_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       certs_goals: {
         Row: {
           created_at: string

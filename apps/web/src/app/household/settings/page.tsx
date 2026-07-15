@@ -30,7 +30,7 @@ function HouseholdChoice() {
       p_name: `${displayName}'s Space`,
       p_invite_code: generateInviteCode(),
       p_invite_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-      p_display_name: (user.user_metadata?.display_name as string | undefined) ?? null,
+      p_display_name: (user.user_metadata?.display_name as string | undefined) ?? undefined,
     })
     if (hErr) { setError(hErr.message); setLoading(false); return }
 
@@ -49,7 +49,7 @@ function HouseholdChoice() {
       p_name: householdName,
       p_invite_code: generateInviteCode(),
       p_invite_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      p_display_name: (user.user_metadata?.display_name as string | undefined) ?? null,
+      p_display_name: (user.user_metadata?.display_name as string | undefined) ?? undefined,
     })
     if (hErr) { setError(hErr.message); setLoading(false); return }
 

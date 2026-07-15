@@ -49,7 +49,7 @@ export function AccountsPanel({ accounts, onSaveAccount, onUploadStatement }: Ac
 
   const openEdit = (acc: Account) => {
     setEditingAccount(acc)
-    setForm({ name: acc.name, type: acc.type, balance: acc.balance.toString(), currency: acc.currency || 'USD' })
+    setForm({ name: acc.name, type: acc.type as AccountType, balance: acc.balance.toString(), currency: acc.currency || 'USD' })
     setStatementFile(null)
     setShowModal(true)
   }
@@ -97,7 +97,7 @@ export function AccountsPanel({ accounts, onSaveAccount, onUploadStatement }: Ac
           <p className="text-sm text-stone-400 text-center py-6 px-5">No accounts yet. Add one to start tracking.</p>
         )}
         {accounts.map(acc => {
-          const cfg = TYPE_CONFIG[acc.type] ?? TYPE_CONFIG.checking
+          const cfg = TYPE_CONFIG[acc.type as AccountType] ?? TYPE_CONFIG.checking
           const { Icon } = cfg
           return (
             <button
