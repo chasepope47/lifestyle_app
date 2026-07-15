@@ -12,6 +12,8 @@ import { BudgetHeroRing } from './_components/BudgetHeroRing'
 import { MonthlySummaryStrip } from './_components/MonthlySummaryStrip'
 import { ReviewView } from './_components/ReviewView'
 import { AccountsPanel } from './_components/AccountsPanel'
+import { GoalsPanel } from './_components/GoalsPanel'
+import { SubscriptionsPanel } from './_components/SubscriptionsPanel'
 import { CategoryEnvelopeGrid, type EnvelopeCategory } from './_components/CategoryEnvelopeGrid'
 import { TransactionList } from './_components/TransactionList'
 import { QuickAddTransaction } from './_components/QuickAddTransaction'
@@ -520,6 +522,10 @@ export default function BudgetPage() {
             onSaveAccount={handleSaveAccount}
             onUploadStatement={handleUploadStatement}
           />
+
+          <GoalsPanel />
+
+          <SubscriptionsPanel />
         </div>
       </div>
 

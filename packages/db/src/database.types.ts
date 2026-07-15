@@ -1504,6 +1504,66 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          amount: number
+          billing_cycle: string
+          category_id: string | null
+          created_at: string
+          household_id: string
+          id: string
+          is_active: boolean
+          name: string
+          next_charge_date: string | null
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          billing_cycle?: string
+          category_id?: string | null
+          created_at?: string
+          household_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          next_charge_date?: string | null
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          billing_cycle?: string
+          category_id?: string | null
+          created_at?: string
+          household_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          next_charge_date?: string | null
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "budget_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           account_id: string
