@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { Apple, BookOpen, GraduationCap, BookHeart, Settings, LogOut, X, Heart } from 'lucide-react'
+import { Apple, BookOpen, GraduationCap, BookHeart, ShieldCheck, Settings, LogOut, X, Heart } from 'lucide-react'
 import { useAuth } from '@/providers/AuthProvider'
 import { ThemePicker } from '@/components/ThemePicker'
 
@@ -8,6 +8,7 @@ const MORE_ITEMS = [
   { href: '/nutrition', icon: Apple,        label: 'Nutrition', desc: 'Food & macros',           color: '#34d399' },
   { href: '/journal',   icon: BookOpen,     label: 'Journal',   desc: 'Entries & reflections',    color: '#f472b6' },
   { href: '/school',    icon: GraduationCap,label: 'School',    desc: 'Assignments & grades',     color: '#fb923c' },
+  { href: '/learning',  icon: ShieldCheck,  label: 'Learning',  desc: 'Study, certs & job search', color: '#4ade80' },
   { href: '/religious', icon: BookHeart,    label: 'Faith',     desc: 'Devotionals & prayer',     color: '#2dd4bf' },
 ]
 

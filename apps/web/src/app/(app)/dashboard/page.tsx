@@ -1,10 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import {
-  Wallet, ShoppingBasket, Apple, Dumbbell,
-  BookOpen, GraduationCap, BookHeart, Heart, ArrowRight, SlidersHorizontal, ShieldCheck,
-} from 'lucide-react'
+import { Heart, ArrowRight, SlidersHorizontal } from 'lucide-react'
 import { useHousehold } from '@/providers/HouseholdProvider'
 import { useAuth } from '@/providers/AuthProvider'
 import { ModulePage } from '@/components/layout/ModulePage'
@@ -14,17 +11,6 @@ import { CustomizeModal } from './_components/CustomizeModal'
 import {
   SafeToSpendWidget, StepsWidget, SleepWidget, PantryLowWidget, SharedBudgetWidget, LearningWidget,
 } from './_components/DashboardWidgets'
-
-const MODULES = [
-  { href: '/budget',    icon: Wallet,        label: 'Budget',    desc: 'Track income & expenses',     hex: '#a78bfa', glow: 'rgba(167,139,250,0.15)' },
-  { href: '/pantry',    icon: ShoppingBasket,label: 'Pantry',    desc: 'Kitchen inventory & meals',   hex: '#fbbf24', glow: 'rgba(251,191,36,0.15)'  },
-  { href: '/nutrition', icon: Apple,         label: 'Nutrition', desc: 'Log food & track macros',     hex: '#34d399', glow: 'rgba(52,211,153,0.15)'  },
-  { href: '/workouts',  icon: Dumbbell,      label: 'Workouts',  desc: 'Sessions & wearables',        hex: '#60a5fa', glow: 'rgba(96,165,250,0.15)'  },
-  { href: '/journal',   icon: BookOpen,      label: 'Journal',   desc: 'Personal & shared entries',   hex: '#f472b6', glow: 'rgba(244,114,182,0.15)' },
-  { href: '/school',    icon: GraduationCap, label: 'School',    desc: 'Assignments & grades',        hex: '#fb923c', glow: 'rgba(251,146,60,0.15)'  },
-  { href: '/learning',  icon: ShieldCheck,   label: 'Learning',  desc: 'Study, certs & job search',   hex: '#4ade80', glow: 'rgba(74,222,128,0.15)'  },
-  { href: '/religious', icon: BookHeart,     label: 'Faith',     desc: 'Devotionals, prayer & more',  hex: '#2dd4bf', glow: 'rgba(45,212,191,0.15)'  },
-]
 
 function greeting() {
   const h = new Date().getHours()
@@ -192,48 +178,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Module grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {MODULES.map(({ href, icon: Icon, label, desc, hex, glow }) => (
-            <Link
-              key={href}
-              href={href}
-              className="group relative rounded-2xl p-5 transition-all duration-200 overflow-hidden glass-card hover:-translate-y-0.5 hover:border-white/20"
-            >
-              {/* Top accent line */}
-              <div
-                className="absolute top-0 left-0 right-0 h-px"
-                style={{ background: `linear-gradient(90deg, transparent, ${hex}60, transparent)` }}
-              />
-
-              {/* Hover glow */}
-              <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                style={{ background: `radial-gradient(ellipse at 0% 0%, ${glow}, transparent 60%)` }}
-              />
-
-              <div className="relative">
-                <div
-                  className="w-11 h-11 rounded-xl flex items-center justify-center mb-4 shadow-sm"
-                  style={{ backgroundColor: `${hex}15` }}
-                >
-                  <Icon className="w-5 h-5" style={{ color: hex }} />
-                </div>
-
-                <div className="flex items-end justify-between">
-                  <div>
-                    <h3 className="font-semibold mb-0.5" style={{ color: 'var(--on-surface)' }}>{label}</h3>
-                    <p className="text-xs leading-relaxed" style={{ color: 'var(--on-surface-variant)' }}>{desc}</p>
-                  </div>
-                  <ArrowRight
-                    className="w-4 h-4 flex-shrink-0 ml-2 mb-0.5 opacity-0 group-hover:opacity-60 transition-opacity"
-                    style={{ color: hex }}
-                  />
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
       </div>
 
       {customizeOpen && (
